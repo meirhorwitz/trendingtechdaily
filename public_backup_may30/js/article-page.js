@@ -1,4 +1,4 @@
-// /js/article-page.js
+// /js/article-page.js - FIXED VERSION
 
 // Helper function
 function getSafe(fn, defaultValue = '') {
@@ -10,25 +10,37 @@ function getSafe(fn, defaultValue = '') {
     }
 }
 
-// Get article slug from URL
-function getArticleSlugFromUrl() {
-    const pathParts = window.location.pathname.split('/');
-    const articleIndex = pathParts.indexOf('article');
-    if (articleIndex !== -1 && articleIndex < pathParts.length - 1) {
-        const potentialSlug = pathParts[articleIndex + 1];
-        if (potentialSlug && !potentialSlug.includes('.')) {
-            return potentialSlug;
-        }
+// Get article info from URL
+function getArticleInfoFromUrl() {
+    const pathParts = window.location.pathname.split('/').filter(part => part && part !== '');
+    console.log('URL path parts:', pathParts);
+    
+    // Check for section-slug/article-slug pattern
+    if (pathParts.length >= 2) {
+        const sectionSlug = pathParts[0];
+        const articleSlug = pathParts[1];
+        
+        console.log('Found section/article URL:', { sectionSlug, articleSlug });
+        return { sectionSlug, articleSlug };
     }
+    
+    // Legacy fallback for query parameter
     const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('slug');
+    const slugParam = urlParams.get('slug');
+    if (slugParam) {
+        console.log('Found slug in query params:', slugParam);
+        return { articleSlug: slugParam };
+    }
+    
+    console.log('No article info found in URL');
+    return null;
 }
 
-// Global article slug
-const articleSlug = getArticleSlugFromUrl();
+// Global article info
+const articleInfo = getArticleInfoFromUrl();
 
 // Main article loading function
-async function loadArticle(slug) {
+async function loadArticle(articleInfo) {
     const articleContainer = document.getElementById('article-container');
     if (!articleContainer || typeof db === 'undefined' || typeof auth === 'undefined') {
         console.error("Article container, DB, or Auth service not ready.");
@@ -37,12 +49,25 @@ async function loadArticle(slug) {
         return;
     }
 
+    if (!articleInfo || !articleInfo.articleSlug) {
+        console.error('No article slug found in URL');
+        showError('Article not found.');
+        document.title = "Article Not Found | TrendingTechDaily";
+        return;
+    }
+
     try {
-        const articlesRef = db.collection('articles');
-        const q = articlesRef.where('slug', '==', slug).where('published', '==', true).limit(1);
-        const snapshot = await q.get();
+        console.log('Loading article with:', articleInfo);
+        
+        // Query for the article
+        let query = db.collection('articles')
+            .where('slug', '==', articleInfo.articleSlug)
+            .where('published', '==', true);
+        
+        const snapshot = await query.limit(1).get();
 
         if (snapshot.empty) {
+            console.error('Article not found in database');
             showError('Article not found or is not published.');
             document.title = "Article Not Found | TrendingTechDaily";
             return;
@@ -50,12 +75,30 @@ async function loadArticle(slug) {
 
         const articleDoc = snapshot.docs[0];
         const article = { id: articleDoc.id, ...articleDoc.data() };
+        console.log('Article found:', article.title);
+
+        // Get section info
+        const sectionDoc = await db.collection('sections').doc(article.category).get();
+        if (!sectionDoc.exists) {
+            console.error('Section not found for article');
+            showError('Article category not found.');
+            return;
+        }
+
+        const section = { id: sectionDoc.id, ...sectionDoc.data() };
+
+        // If we have a section slug in the URL, verify it matches
+        if (articleInfo.sectionSlug && articleInfo.sectionSlug !== section.slug) {
+            // Redirect to the correct URL
+            window.location.href = `/${section.slug}/${article.slug}`;
+            return;
+        }
         
         // Update page metadata
         updatePageMetadata(article);
         
         // Render article content
-        await renderArticle(article);
+        await renderArticle(article, section);
         
         // Post-render actions
         await handlePostRenderActions(article);
@@ -73,19 +116,6 @@ function updatePageMetadata(article) {
     
     document.title = pageTitle;
     
-    // Update canonical URL
-    const canonicalSlug = getSafe(() => article.slug);
-    if (canonicalSlug) {
-        const canonicalUrl = `https://trendingtechdaily.com/article/${canonicalSlug}`;
-        let canonicalLink = document.querySelector("link[rel='canonical']");
-        if (!canonicalLink) {
-            canonicalLink = document.createElement('link');
-            canonicalLink.setAttribute('rel', 'canonical');
-            document.head.appendChild(canonicalLink);
-        }
-        canonicalLink.setAttribute('href', canonicalUrl);
-    }
-    
     // Update meta description
     let metaDescriptionTag = document.querySelector('meta[name="description"]');
     if (!metaDescriptionTag) {
@@ -94,22 +124,29 @@ function updatePageMetadata(article) {
         document.head.appendChild(metaDescriptionTag);
     }
     metaDescriptionTag.setAttribute('content', pageDescription);
+    
+    // Call the updateMetaTags function if it exists
+    if (typeof updateMetaTags === 'function') {
+        updateMetaTags({
+            title: article.title,
+            description: pageDescription,
+            category: article.category,
+            slug: article.slug
+        });
+    }
 }
 
 // Render article content
-async function renderArticle(article) {
+async function renderArticle(article, section) {
     const articleContainer = document.getElementById('article-container');
     const date = getSafe(() => new Date(article.createdAt.toDate()).toLocaleDateString(), 'N/A');
     
-    // Get category name
-    let categoryName = categoryCache[article.category] || 'Uncategorized';
-    if (article.category && categoryName === 'Uncategorized') {
-        try {
-            const catDoc = await db.collection('sections').doc(article.category).get();
-            if (catDoc.exists) categoryName = getSafe(() => catDoc.data().name, categoryName);
-        } catch (catErr) {
-            console.warn("Could not fetch category name", catErr);
-        }
+    // Get category name from sections collection
+    let categoryName = 'Uncategorized';
+    let categorySlug = 'uncategorized';
+    if (section) {
+        categoryName = section.name;
+        categorySlug = section.slug;
     }
     
     const articleHTML = `
@@ -118,7 +155,7 @@ async function renderArticle(article) {
                 <h1 class="article-title">${getSafe(() => article.title, 'Untitled Article')}</h1>
                 <div class="article-meta text-muted small">
                     <span>Published on ${date}</span> |
-                    <span id="category-display">Category: ${categoryName}</span>
+                    <span id="category-display">Category: <a href="/${categorySlug}">${categoryName}</a></span>
                     ${getSafe(() => article.author) ? ` | <span>By ${article.author}</span>` : ''}
                     ${getSafe(() => article.readingTimeMinutes) ? 
                         `<span class="ms-2">
@@ -180,7 +217,7 @@ async function renderArticle(article) {
                 </form>
             </div>
             <div id="comment-login-prompt" class="mb-4" style="display: block;">
-                <p class="text-muted small"><a href="/login.html">Log in</a> or <a href="/signup.html">sign up</a> to leave a comment.</p>
+                <p class="text-muted small"><a href="/login">Log in</a> or <a href="/signup">sign up</a> to leave a comment.</p>
             </div>
             <div id="comments-list">
                 <p class="text-muted small">Loading comments...</p>
@@ -234,12 +271,24 @@ async function handlePostRenderActions(article) {
         const relatedContainer = document.getElementById('related-articles-container');
         if (relatedContainer) relatedContainer.style.display = 'none';
     }
+    
+    // Load trending articles for sidebar
+    loadTrendingArticles();
 }
 
 // Setup share buttons
-function setupShareButtons(article) {
+async function setupShareButtons(article) {
     try {
-        const shareUrl = `https://trendingtechdaily.com/article/${getSafe(() => article.slug, '')}`;
+        // Get section slug for the URL
+        let sectionSlug = 'article';
+        if (article.category) {
+            const sectionDoc = await db.collection('sections').doc(article.category).get();
+            if (sectionDoc.exists) {
+                sectionSlug = sectionDoc.data().slug;
+            }
+        }
+        
+        const shareUrl = `https://trendingtechdaily.com/${sectionSlug}/${getSafe(() => article.slug, '')}`;
         const shareTitle = encodeURIComponent(getSafe(() => article.title, document.title));
         const shareExcerpt = encodeURIComponent(getSafe(() => article.excerpt, '').substring(0, 250));
         
@@ -480,92 +529,111 @@ async function loadComments(articleId) {
 }
 
 // Load related articles
-function loadRelatedArticles(categoryId, currentArticleId) {
+async function loadRelatedArticles(categoryId, currentArticleId) {
     const container = document.getElementById('related-articles-list');
     const sectionContainer = document.getElementById('related-articles-container');
     if (!container || !sectionContainer || !db) return;
     
-    db.collection('articles')
-        .where('category', '==', categoryId)
-        .where('published', '==', true)
-        .limit(4)
-        .get()
-        .then(snapshot => {
-            if (snapshot.docs.length <= 1) {
-                sectionContainer.style.display = 'none';
-                return;
-            }
+    try {
+        const snapshot = await db.collection('articles')
+            .where('category', '==', categoryId)
+            .where('published', '==', true)
+            .limit(4)
+            .get();
+        
+        if (snapshot.docs.length <= 1) {
+            sectionContainer.style.display = 'none';
+            return;
+        }
+        
+        // Get section info for URL generation
+        const sectionDoc = await db.collection('sections').doc(categoryId).get();
+        const sectionSlug = sectionDoc.exists ? sectionDoc.data().slug : 'article';
+        
+        let relatedHTML = '';
+        let count = 0;
+        
+        snapshot.forEach(doc => {
+            if (doc.id === currentArticleId || count >= 3) return;
+            count++;
             
-            let relatedHTML = '';
-            let count = 0;
-            
-            snapshot.forEach(doc => {
-                if (doc.id === currentArticleId || count >= 3) return;
-                count++;
-                
-                const article = doc.data();
-                relatedHTML += `
-                    <div class="col-md-4 mb-3">
-                        <div class="card h-100 shadow-sm">
-                            <div class="card-body d-flex flex-column">
-                                <h5 class="card-title small">
-                                    <a href="/article/${getSafe(() => article.slug, '#')}">${getSafe(() => article.title, 'Untitled')}</a>
-                                </h5>
-                                <p class="card-text text-muted small flex-grow-1">${getSafe(() => article.excerpt, '').substring(0, 80)}...</p>
-                                <a href="/article/${getSafe(() => article.slug, '#')}" class="btn btn-sm btn-outline-secondary mt-auto">Read More</a>
-                            </div>
+            const article = doc.data();
+            relatedHTML += `
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title small">
+                                <a href="/${sectionSlug}/${getSafe(() => article.slug, '#')}">${getSafe(() => article.title, 'Untitled')}</a>
+                            </h5>
+                            <p class="card-text text-muted small flex-grow-1">${getSafe(() => article.excerpt, '').substring(0, 80)}...</p>
+                            <a href="/${sectionSlug}/${getSafe(() => article.slug, '#')}" class="btn btn-sm btn-outline-secondary mt-auto">Read More</a>
                         </div>
                     </div>
-                `;
-            });
-            
-            if (relatedHTML) {
-                container.innerHTML = relatedHTML;
-                sectionContainer.style.display = 'block';
-            } else {
-                sectionContainer.style.display = 'none';
-            }
-        })
-        .catch(error => {
-            console.error('Error loading related articles:', error);
+                </div>
+            `;
         });
+        
+        if (relatedHTML) {
+            container.innerHTML = relatedHTML;
+            sectionContainer.style.display = 'block';
+        } else {
+            sectionContainer.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Error loading related articles:', error);
+        sectionContainer.style.display = 'none';
+    }
 }
 
 // Load trending articles for sidebar
-function loadTrendingArticles() {
+async function loadTrendingArticles() {
     const container = document.getElementById('trending-articles-list');
     if (!container || !db) return;
     
     container.innerHTML = '<li>Loading...</li>';
     
-    db.collection('articles')
-        .where('published', '==', true)
-        .orderBy('createdAt', 'desc')
-        .limit(6)
-        .get()
-        .then(snapshot => {
-            if (snapshot.empty) {
-                container.innerHTML = '<li>No articles found</li>';
-                return;
-            }
-            
-            let trendingHTML = '';
-            let count = 0;
-            
-            snapshot.forEach(doc => {
-                const article = doc.data();
-                if (article.slug === articleSlug || count >= 5) return;
-                count++;
-                
-                trendingHTML += `<li><a href="/article/${getSafe(() => article.slug, '#')}">${getSafe(() => article.title, 'Untitled')}</a></li>`;
+    try {
+        const snapshot = await db.collection('articles')
+            .where('published', '==', true)
+            .orderBy('createdAt', 'desc')
+            .limit(6)
+            .get();
+        
+        if (snapshot.empty) {
+            container.innerHTML = '<li>No articles found</li>';
+            return;
+        }
+        
+        // Create a map of section IDs to slugs
+        const sectionSlugs = {};
+        const sectionIds = [...new Set(snapshot.docs.map(doc => doc.data().category).filter(Boolean))];
+        
+        if (sectionIds.length > 0) {
+            const sectionsSnapshot = await db.collection('sections').where(firebase.firestore.FieldPath.documentId(), 'in', sectionIds).get();
+            sectionsSnapshot.forEach(doc => {
+                sectionSlugs[doc.id] = doc.data().slug;
             });
+        }
+        
+        let trendingHTML = '';
+        let count = 0;
+        
+        snapshot.forEach(doc => {
+            const article = doc.data();
+            // Skip the current article
+            if (articleInfo && article.slug === articleInfo.articleSlug) return;
+            if (count >= 5) return;
+            count++;
             
-            container.innerHTML = trendingHTML || '<li>No trending articles</li>';
-        })
-        .catch(error => {
-            console.error('Error loading trending articles:', error);
-            container.innerHTML = '<li>Failed to load</li>';
+            const sectionSlug = sectionSlugs[article.category] || 'article';
+            trendingHTML += `<li><a href="/${sectionSlug}/${getSafe(() => article.slug, '#')}">${getSafe(() => article.title, 'Untitled')}</a></li>`;
         });
+        
+        container.innerHTML = trendingHTML || '<li>No trending articles</li>';
+    } catch (error) {
+        console.error('Error loading trending articles:', error);
+        container.innerHTML = '<li>Failed to load</li>';
+    }
 }
 
 // Button loading state helper
@@ -686,38 +754,16 @@ function initializeEmbeds() {
     }, 1500);
 }
 
-// Initialize page
-document.addEventListener('DOMContentLoaded', () => {
-    // Add embed styles
-    addEmbedStyles();
+// Initialize when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Article page DOM loaded');
     
-    // Wait for Firebase to be ready
-    function attemptPageLoad() {
-        if (typeof firebase !== 'undefined' && firebase.app() && typeof db !== 'undefined' && typeof auth !== 'undefined') {
-            console.log("article.html: DOM Loaded & Firebase Ready.");
-            
-            // Load article content
-            if (!articleSlug) {
-                showError('No article specified.');
-            } else {
-                loadArticle(articleSlug);
-            }
-            
-            // Load sidebar content
-            loadTrendingArticles();
-            
-            // Handle embed resizing
-            window.addEventListener('resize', function() {
-                if (window.twttr && window.twttr.widgets) {
-                    window.twttr.widgets.load();
-                }
-            });
-            
-        } else {
-            console.warn("article.html: DOM loaded but Firebase services not ready. Retrying...");
-            setTimeout(attemptPageLoad, 300);
-        }
+    if (articleInfo) {
+        console.log('Loading article with info:', articleInfo);
+        loadArticle(articleInfo);
+    } else {
+        console.error('No article info found');
+        showError('Invalid article URL.');
+        document.title = "Article Not Found | TrendingTechDaily";
     }
-    
-    attemptPageLoad();
 });

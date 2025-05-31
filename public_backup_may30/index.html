@@ -4,6 +4,19 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TrendingTech Daily - Latest Tech News and Trends</title>
+  <meta name="description" content="Stay ahead with TrendingTech Daily - your premier source for breaking tech news, in-depth analysis, AI developments, startup insights, and expert reviews. Get daily updates on technology trends, innovations, and digital transformation.">
+  <meta name="keywords" content="tech news, technology trends, AI news, startup news, tech reviews, digital innovation, breaking tech news, technology analysis">
+  <meta name="author" content="TrendingTech Daily">
+  <meta property="og:title" content="TrendingTech Daily - Latest Tech News and Trends">
+  <meta property="og:description" content="Your premier source for breaking tech news, AI developments, startup insights, and expert technology analysis. Stay informed with daily updates.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://trendingtechdaily.com/">
+  <meta property="og:image" content="https://trendingtechdaily.com/og-image.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="TrendingTech Daily - Latest Tech News and Trends">
+  <meta name="twitter:description" content="Breaking tech news, AI developments, startup insights, and expert analysis. Stay ahead with daily technology updates.">
+  <meta name="robots" content="index, follow">
+  
   <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
   new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
   j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
@@ -13,7 +26,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-<!-- Add this in your <head> section -->
 
   <link rel="canonical" href="https://trendingtechdaily.com/" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -25,19 +37,40 @@
   <link rel="stylesheet" href="css/popup.css" />
   <link rel="stylesheet" href="css/sidebar-podcasts.css" />
 
-
-
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8142734137865758"
     crossorigin="anonymous"></script>
-    <link rel="icon" href="favicon.ico" sizes="any"> <link rel="icon" href="favicon.svg.html" type="image/svg+xml"> <link rel="apple-touch-icon" href="apple-touch-icon.png.html">
-   
-
-  </head>
+  <link rel="icon" href="/favicon.ico" sizes="any"> 
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml"> 
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "TrendingTech Daily",
+    "description": "Your premier source for breaking tech news, AI developments, startup insights, and expert technology analysis",
+    "url": "https://trendingtechdaily.com/",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://trendingtechdaily.com/search?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+</head>
 <body>
   <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-M68CNVMQ"
   height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <!-- Navbar Placeholder -->
   <div id="navbar-placeholder"></div>
+  
+  <!-- Hero Section with H1 -->
+  <header class="hero-section">
+    <div class="container">
+      <h1 class="visually-hidden">TrendingTech Daily - Latest Technology News, AI Updates, and Tech Trends</h1>
+    </div>
+  </header>
+  
   <!-- Welcome Popup -->
   <div id="welcome-popup-overlay" class="welcome-popup-overlay">
     <div class="welcome-popup">
@@ -58,7 +91,7 @@
             <div class="benefit-icon">
               <i class="bi bi-bookmark-heart"></i>
             </div>
-            <h4>Save Articles</h4>
+            <h3>Save Articles</h3>
             <p>Bookmark articles for later reading and build your personal tech knowledge library.</p>
           </div>
           
@@ -66,7 +99,7 @@
             <div class="benefit-icon">
               <i class="bi bi-eye-fill"></i>
             </div>
-            <h4>Track Reading</h4>
+            <h3>Track Reading</h3>
             <p>Keep track of articles you've read and discover personalized recommendations.</p>
           </div>
           
@@ -74,7 +107,7 @@
             <div class="benefit-icon">
               <i class="bi bi-chat-dots"></i>
             </div>
-            <h4>Join Discussions</h4>
+            <h3>Join Discussions</h3>
             <p>Leave comments, engage with other tech enthusiasts, and share your insights.</p>
           </div>
           
@@ -82,13 +115,13 @@
             <div class="benefit-icon">
               <i class="bi bi-graph-up"></i>
             </div>
-            <h4>Stock Wishlist</h4>
+            <h3>Stock Wishlist</h3>
             <p>Create a personalized watchlist to track your favorite tech stocks and investments.</p>
           </div>
         </div>
         
         <div class="popup-actions">
-          <a href="signup.html" class="popup-btn popup-btn-primary">
+          <a href="/signup.html" class="popup-btn popup-btn-primary">
             <i class="bi bi-person-plus"></i>
             Create Free Account
           </a>
@@ -99,15 +132,10 @@
       </div>
       
       <div class="popup-footer">
-        <p>Already have an account? <a href="login.html">Sign in here</a></p>
+        <p>Already have an account? <a href="/login.html">Sign in here</a></p>
       </div>
     </div>
   </div>
- <!-- Banner location -->
-    </div>
-  </header>
-
-  
 
   <section class="container mb-5" id="featured-article-container">
     <div class="spinner-container text-center py-5">
@@ -115,6 +143,7 @@
       <p>Loading featured article...</p>
     </div>
   </section>
+  
   <section class="container mt-5 mb-4 video-recommendations">
     <h2 class="section-title">Recommended Videos</h2>
     <div id="video-loader" class="spinner-container text-center py-4">
@@ -122,12 +151,14 @@
          <p class="text-muted small mt-2">Loading videos...</p>
     </div>
     <div id="video-recommendations-container" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
-        </div>
+    </div>
 
-        <div id="show-more-videos-container" class="text-center mt-4" style="display: none;">
-          <button id="show-more-videos-btn" class="btn btn-outline-secondary btn-sm">Show More Videos</button>
-          <button id="show-less-videos-btn" class="btn btn-outline-secondary btn-sm" style="display: none;">Show Less Videos</button> </div>
-    </section>
+    <div id="show-more-videos-container" class="text-center mt-4" style="display: none;">
+      <button id="show-more-videos-btn" class="btn btn-outline-secondary btn-sm">Show More Videos</button>
+      <button id="show-less-videos-btn" class="btn btn-outline-secondary btn-sm" style="display: none;">Show Less Videos</button>
+    </div>
+  </section>
+  
   <main class="container">
     <div class="row">
       <div class="col-lg-8">
@@ -142,15 +173,15 @@
       </div>
       <aside class="col-lg-4">
         <div class="sidebar-section mb-5">
-          <h4>Trending Topics</h4>
+          <h3>Trending Topics</h3>
           <ul class="trending-topics-list" id="categories-list">
             <div class="spinner-container py-2 text-center"><div class="spinner-border spinner-border-sm" role="status"></div></div>
           </ul>
         </div>
         <div class="sidebar-section mb-5">
           <div class="section-header d-flex justify-content-between align-items-center mb-3">
-            <h4>Recommended Podcasts</h4>
-            <a href="podcasts.html" class="btn btn-outline-primary btn-sm">
+            <h3>Recommended Podcasts</h3>
+            <a href="/podcasts.html" class="btn btn-outline-primary btn-sm">
               <i class="bi bi-headphones me-1"></i>View All
             </a>
           </div>
@@ -174,67 +205,93 @@
   <footer class="footer">
       <div class="container">
           <div class="row">
-              <div class="col-md-3 mb-4 mb-md-0"><h5 id="footer-site-title">TrendingTech Daily</h5><p id="footer-description" class="small text-muted">Stay informed...</p></div>
-              <div class="col-md-3 mb-4 mb-md-0"><h5>Quick Links</h5><ul class="footer-links"><li><a href="index.html">Home</a></li><li><a href="about.html">About Us</a></li><li><a href="privacy.html">Privacy Policy</a></li><li><a href="terms.html">Terms of Service</a></li></ul></div>
-              <div class="col-md-3 mb-4 mb-md-0"><h5>Categories</h5><ul class="footer-links" id="footer-categories-list"><li class="text-muted small fst-italic">Coming soon</li></ul></div>
-              <div class="col-md-3"><h5>Contact Us</h5><p class="small"><i class="bi bi-envelope-fill me-1"></i><span id="contact-email">Coming soon</span><br><i class="bi bi-geo-alt-fill me-1"></i><span id="contact-address">Coming soon</span></p><div id="footer-social-links" class="mt-2"></div></div>
+              <div class="col-md-3 mb-4 mb-md-0">
+                <h4 id="footer-site-title">TrendingTech Daily</h4>
+                <p id="footer-description" class="small text-muted">Your premier source for breaking tech news, AI developments, and technology trends. Stay informed with daily updates on innovation and digital transformation.</p>
+              </div>
+              <div class="col-md-3 mb-4 mb-md-0">
+                <h4>Quick Links</h4>
+                <ul class="footer-links">
+                  <li><a href="/">Home</a></li>
+                  <li><a href="/about.html">About Us</a></li>
+                  <li><a href="/privacy.html">Privacy Policy</a></li>
+                  <li><a href="/terms.html">Terms of Service</a></li>
+                </ul>
+              </div>
+              <div class="col-md-3 mb-4 mb-md-0">
+                <h4>Categories</h4>
+                <ul class="footer-links" id="footer-categories-list">
+                  <li class="text-muted small fst-italic">Coming soon</li>
+                </ul>
+              </div>
+              <div class="col-md-3">
+                <h4>Contact Us</h4>
+                <p class="small">
+                  <i class="bi bi-envelope-fill me-1"></i><span id="contact-email">contact@trendingtechdaily.com</span><br>
+                  <i class="bi bi-geo-alt-fill me-1"></i><span id="contact-address">Coming soon</span>
+                </p>
+                <div id="footer-social-links" class="mt-2"></div>
+              </div>
           </div>
-          <div class="copyright"> <span id="footer-text">2025 TrendingTech Daily.</span></div>
+          <div class="copyright">
+            <span id="footer-text">© 2025 TrendingTech Daily. All rights reserved.</span>
+          </div>
       </div>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
   <script src="js/app-base.js"></script>
   <script src="js/index-main.js"></script>
   <script src="js/index-features.js"></script>
   <script src="js/ai-agent.js" defer></script>
-<!-- SINGLE AI-AGENT CONTAINER -->
-<div class="ai-agent-container" id="aiAgentContainer">
-  <button class="ai-agent-button" id="aiAgentButton" aria-label="AI Tech News Assistant">
-    <div class="ai-agent-pulse"></div>
-    <svg class="ai-agent-icon" fill="currentColor" viewBox="0 0 24 24">
-      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-    </svg>
-  </button>
-  <div class="ai-agent-chat" id="aiAgentChat">
-    <div class="ai-chat-header">
-      <h3>
-        <span class="ai-status-indicator"></span>
-        AI Tech News Agent
-      </h3>
-      <button class="ai-chat-close" id="aiChatClose" aria-label="Close chat">
-        <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-        </svg>
-      </button>
-    </div>
-    <div class="ai-chat-content">
-      <div class="ai-chat-messages" id="aiChatMessages">
-        <div class="ai-message bot">
-          <div class="ai-message-bubble">
-            Hello! I'm your AI assistant for TrendingTech Daily. I can help you find articles, explain tech concepts, or discuss the latest tech news. How can I assist you today?
+  
+  <!-- SINGLE AI-AGENT CONTAINER -->
+  <div class="ai-agent-container" id="aiAgentContainer">
+    <button class="ai-agent-button" id="aiAgentButton" aria-label="AI Tech News Assistant">
+      <div class="ai-agent-pulse"></div>
+      <svg class="ai-agent-icon" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+      </svg>
+    </button>
+    <div class="ai-agent-chat" id="aiAgentChat">
+      <div class="ai-chat-header">
+        <h3>
+          <span class="ai-status-indicator"></span>
+          AI Tech News Agent
+        </h3>
+        <button class="ai-chat-close" id="aiChatClose" aria-label="Close chat">
+          <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+          </svg>
+        </button>
+      </div>
+      <div class="ai-chat-content">
+        <div class="ai-chat-messages" id="aiChatMessages">
+          <div class="ai-message bot">
+            <div class="ai-message-bubble">
+              Hello! I'm your AI assistant for TrendingTech Daily. I can help you find articles, explain tech concepts, or discuss the latest tech news. How can I assist you today?
+            </div>
           </div>
         </div>
       </div>
-    </div>
-    <div class="ai-chat-input">
-      <div class="ai-quick-actions">
-        <button class="ai-quick-action" data-action="What's trending today?">What's trending?</button>
-        <button class="ai-quick-action" data-action="Explain this article">Explain article</button>
-        <button class="ai-quick-action" data-action="Find AI news">AI news</button>
+      <div class="ai-chat-input">
+        <div class="ai-quick-actions">
+          <button class="ai-quick-action" data-action="What's trending today?">What's trending?</button>
+          <button class="ai-quick-action" data-action="Explain this article">Explain article</button>
+          <button class="ai-quick-action" data-action="Find AI news">AI news</button>
+        </div>
+        <form class="ai-input-form" id="aiInputForm">
+          <input type="text" class="ai-input-field" id="aiInputField" placeholder="Ask me anything..." autocomplete="off">
+          <button type="submit" class="ai-send-button" id="aiSendButton" disabled>
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+            </svg>
+          </button>
+        </form>
       </div>
-      <form class="ai-input-form" id="aiInputForm">
-        <input type="text" class="ai-input-field" id="aiInputField" placeholder="Ask me anything..." autocomplete="off">
-        <button type="submit" class="ai-send-button" id="aiSendButton" disabled>
-          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-          </svg>
-        </button>
-      </form>
     </div>
   </div>
-</div>
+  
   <!-- BANNER POINTER (positioned at bottom) -->
   <div class="ai-agent-banner-pointer" id="aiAgentBannerPointer">
     <div class="ai-agent-banner">
@@ -252,5 +309,7 @@
       </div>
     </div>
   </div>
+  <script src="/debug-script.js"></script>
+
 </body>
 </html>

@@ -1,9 +1,51 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Add this right after <head> in your article.html -->
+<script>
+    // Client-side routing fix
+    (function() {
+        // Check if we're on the correct page
+        const path = window.location.pathname;
+        const validCategories = ['ai', 'tech', 'market', 'global', 'startups', 'business', 'cybersecurity', 'blockchain'];
+        
+        // Check if URL matches article pattern
+        const parts = path.split('/').filter(p => p);
+        if (parts.length === 2 && validCategories.includes(parts[0])) {
+            // We're on an article URL but not on article.html
+            if (!window.location.pathname.includes('article.html')) {
+                // Store the intended path and redirect to article.html
+                sessionStorage.setItem('articlePath', path);
+                window.location.href = '/article.html';
+            }
+        }
+        
+        // If we're on article.html, check if we need to load an article
+        if (window.location.pathname === '/article.html') {
+            const intendedPath = sessionStorage.getItem('articlePath');
+            if (intendedPath) {
+                // Clear the stored path
+                sessionStorage.removeItem('articlePath');
+                // Update the browser URL without reloading
+                window.history.replaceState({}, '', intendedPath);
+            }
+        }
+    })();
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Article - TrendingTech Daily</title>
+    <meta name="robots" content="index, follow">
+    <meta name="description" content="Read the latest technology news, insights, and analysis on TrendingTech Daily. Stay informed about AI, startups, digital transformation, and more.">
+    <!-- Dynamic canonical URL will be set by JavaScript -->
+    <link rel="canonical" id="canonicalLink">
+    <meta property="og:type" content="article">
+    <meta property="og:title" id="ogTitle">
+    <meta property="og:description" id="ogDescription">
+    <meta property="og:url" id="ogUrl">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" id="twitterTitle">
+    <meta name="twitter:description" id="twitterDescription">
     
     <!-- Google Tag Manager -->
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -28,6 +70,29 @@
     
     <!-- AdSense -->
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8142734137865758" crossorigin="anonymous"></script>
+
+    <!-- Add this script in the head section -->
+    <script>
+    function updateMetaTags(articleData) {
+        const baseUrl = 'https://www.trendingtechdaily.com';
+        const articleUrl = `${baseUrl}/${articleData.category}/${articleData.slug}`;
+        
+        // Update canonical URL
+        document.getElementById('canonicalLink').href = articleUrl;
+        
+        // Update page title
+        document.title = `${articleData.title} - TrendingTech Daily`;
+        
+        // Update Open Graph tags
+        document.getElementById('ogTitle').content = articleData.title;
+        document.getElementById('ogDescription').content = articleData.description || 'Read the latest technology news and insights on TrendingTech Daily';
+        document.getElementById('ogUrl').content = articleUrl;
+        
+        // Update Twitter tags
+        document.getElementById('twitterTitle').content = articleData.title;
+        document.getElementById('twitterDescription').content = articleData.description || 'Read the latest technology news and insights on TrendingTech Daily';
+    }
+    </script>
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -212,5 +277,7 @@
     </div>
   </div>
     </div>
+    <script src="/debug-script.js"></script>
+
 </body>
 </html>

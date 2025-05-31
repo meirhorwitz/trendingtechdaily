@@ -201,69 +201,78 @@ function loadLatestArticles() {
 // --- MODIFIED DATA LOADING FUNCTIONS ---
 
 // *** MODIFIED: This function now returns its promise ***
-function loadSections() {
-    const categoryNavPlaceholder = document.getElementById('category-nav-placeholder');
-    const footerCategoriesList = document.getElementById('footer-categories-list');
-    const sidebarContainer = document.getElementById('categories-list');
-    
-    // Return the promise chain
-    return db.collection('sections').where('active', '==', true).orderBy('order').limit(10).get()
-      .then(snap => {
-          // ... (all existing logic from the original function's .then() block remains here)
-          let navHTML = '';
-          let footerCategoriesHTML = '';
-          let sideHTML = '';
-          let apiSections = [];
-          if (!snap.empty) {
-              snap.forEach(doc => {
-                  const section = { id: doc.id, ...doc.data() };
-                  const url = `/category.html?slug=${getSafe(() => section.slug, '#')}`;
-                  const name = getSafe(() => section.name, 'Unnamed Section');
-                  navHTML += `<li class="nav-item"><a class="nav-link" href="${url}">${name}</a></li>`;
-                  footerCategoriesHTML += `<li><a href="${url}">${name}</a></li>`;
-                  if (sidebarContainer) sideHTML += `<li><a href="${url}">${name}</a></li>`;
-                  categoryCache[doc.id] = name; // Populate the cache
-                  if (section.api) apiSections.push(section);
-              });
-          }
-          // ... (rest of the logic inside the 'then' block is unchanged)
-          const stockDataUrl = 'https://www.trendingtechdaily.com/stock-data.html';
-          const stockDataLinkText = 'Stock Data';
-          navHTML += `<li class="nav-item"><a class="nav-link" href="${stockDataUrl}">${stockDataLinkText}</a></li>`;
-          footerCategoriesHTML += `<li><a href="${stockDataUrl}">${stockDataLinkText}</a></li>`;
-          if (sidebarContainer) sideHTML += `<li><a href="${stockDataUrl}">${stockDataLinkText}</a></li>`;
+// This is the corrected loadSections function from app-base.js
+// Replace the existing loadSections function with this one
 
-          if (categoryNavPlaceholder && navHTML) {
-              const fragment = document.createDocumentFragment();
-              const tempDiv = document.createElement('div');
-              tempDiv.innerHTML = navHTML;
-              while (tempDiv.firstChild) {
-                  fragment.appendChild(tempDiv.firstChild);
-              }
-              categoryNavPlaceholder.parentNode.insertBefore(fragment, categoryNavPlaceholder);
-          }
-          if (footerCategoriesList) footerCategoriesList.innerHTML = footerCategoriesHTML || '<li>No categories found.</li>';
-          if (sidebarContainer) sidebarContainer.innerHTML = sideHTML || '<li>No categories found.</li>';
-          
-          const apiContainer = document.getElementById('api-articles-container');
-          document.getElementById('api-loading-initial')?.remove();
-          if (apiSections.length > 0 && apiContainer) {
-              if (typeof loadAndRenderApiArticles === 'function') {
-                  apiContainer.innerHTML = '';
-                  apiSections.forEach(cat => loadAndRenderApiArticles(cat));
-              } else {
-                  console.error("loadAndRenderApiArticles function is not defined!");
-              }
-          } else if (apiContainer) {
-              apiContainer.innerHTML = ''; // Clear if no API sections
-          }
-      }).catch(error => {
-          console.error('Error loading sections:', error);
-          if (sidebarContainer) sidebarContainer.innerHTML = '<li>Error loading categories</li>';
-          if (footerCategoriesList) footerCategoriesList.innerHTML = '<li>Error loading categories</li>';
-          // Propagate the error to be caught by the caller
-          throw error;
-      });
+function loadSections() {
+  const categoryNavPlaceholder = document.getElementById('category-nav-placeholder');
+  const footerCategoriesList = document.getElementById('footer-categories-list');
+  const sidebarContainer = document.getElementById('categories-list');
+  
+  // Return the promise chain
+  return db.collection('sections').where('active', '==', true).orderBy('order').limit(10).get()
+    .then(snap => {
+        let navHTML = '';
+        let footerCategoriesHTML = '';
+        let sideHTML = '';
+        let apiSections = [];
+        
+        if (!snap.empty) {
+            snap.forEach(doc => {
+                const section = { id: doc.id, ...doc.data() };
+                // Use clean URLs instead of query parameters
+                const url = `/${getSafe(() => section.slug, '#')}`;
+                const name = getSafe(() => section.name, 'Unnamed Section');
+                
+                navHTML += `<li class="nav-item"><a class="nav-link" href="${url}">${name}</a></li>`;
+                footerCategoriesHTML += `<li><a href="${url}">${name}</a></li>`;
+                if (sidebarContainer) sideHTML += `<li><a href="${url}">${name}</a></li>`;
+                
+                categoryCache[doc.id] = name; // Populate the cache
+                if (section.api) apiSections.push(section);
+            });
+        }
+        
+        // Add stock data link
+        const stockDataUrl = '/stock-data';
+        const stockDataLinkText = 'Stock Data';
+        navHTML += `<li class="nav-item"><a class="nav-link" href="${stockDataUrl}">${stockDataLinkText}</a></li>`;
+        footerCategoriesHTML += `<li><a href="${stockDataUrl}">${stockDataLinkText}</a></li>`;
+        if (sidebarContainer) sideHTML += `<li><a href="${stockDataUrl}">${stockDataLinkText}</a></li>`;
+
+        if (categoryNavPlaceholder && navHTML) {
+            const fragment = document.createDocumentFragment();
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = navHTML;
+            while (tempDiv.firstChild) {
+                fragment.appendChild(tempDiv.firstChild);
+            }
+            categoryNavPlaceholder.parentNode.insertBefore(fragment, categoryNavPlaceholder);
+        }
+        
+        if (footerCategoriesList) footerCategoriesList.innerHTML = footerCategoriesHTML || '<li>No categories found.</li>';
+        if (sidebarContainer) sidebarContainer.innerHTML = sideHTML || '<li>No categories found.</li>';
+        
+        const apiContainer = document.getElementById('api-articles-container');
+        document.getElementById('api-loading-initial')?.remove();
+        
+        if (apiSections.length > 0 && apiContainer) {
+            if (typeof loadAndRenderApiArticles === 'function') {
+                apiContainer.innerHTML = '';
+                apiSections.forEach(cat => loadAndRenderApiArticles(cat));
+            } else {
+                console.error("loadAndRenderApiArticles function is not defined!");
+            }
+        } else if (apiContainer) {
+            apiContainer.innerHTML = ''; // Clear if no API sections
+        }
+    }).catch(error => {
+        console.error('Error loading sections:', error);
+        if (sidebarContainer) sidebarContainer.innerHTML = '<li>Error loading categories</li>';
+        if (footerCategoriesList) footerCategoriesList.innerHTML = '<li>Error loading categories</li>';
+        // Propagate the error to be caught by the caller
+        throw error;
+    });
 }
 
 // ... All other functions (loadSiteSettings, loadRealTimeStockData, renderApiArticles, etc.) remain unchanged ...

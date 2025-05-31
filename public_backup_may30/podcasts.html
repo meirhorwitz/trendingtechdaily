@@ -42,9 +42,9 @@
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8142734137865758" crossorigin="anonymous"></script>
 
     <!-- Favicons -->
-    <link rel="icon" href="favicon.ico" sizes="any">
-    <link rel="icon" href="favicon.svg.html" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="apple-touch-icon.png.html">
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <link rel="stylesheet" href="css/podcasts.css" />
 
 </head>
@@ -97,11 +97,11 @@
                 <div class="col-md-3 mb-4 mb-md-0">
                     <h5>Quick Links</h5>
                     <ul class="footer-links">
-                        <li><a href="index.html">Home</a></li>
-                        <li><a href="podcasts.html">Podcasts</a></li>
-                        <li><a href="about.html">About Us</a></li>
-                        <li><a href="privacy.html">Privacy Policy</a></li>
-                        <li><a href="terms.html">Terms of Service</a></li>
+                        <li><a href="/">Home</a></li>
+                        <li><a href="/podcasts.html">Podcasts</a></li>
+                        <li><a href="/about.html">About Us</a></li>
+                        <li><a href="/privacy.html">Privacy Policy</a></li>
+                        <li><a href="/terms.html">Terms of Service</a></li>
                     </ul>
                 </div>
                 <div class="col-md-3 mb-4 mb-md-0">
@@ -227,13 +227,13 @@
                 htmlContent += `
                     <div class="col">
                         <div class="card h-100 podcast-card shadow-sm">
-                            <img src="${imageUrl}.html" class="card-img-top" alt="${podcastName}" onerror="this.onerror=null; this.src='img/default-podcast-art.png';">
+                            <img src="${imageUrl}" class="card-img-top" alt="${podcastName}" onerror="this.onerror=null; this.src='img/default-podcast-art.png';">
                             <div class="card-body">
                                 <h5 class="card-title">${podcastName}</h5>
                                 <p class="card-text small text-muted mb-2">By: ${publisher}</p>
                                 <div class="podcast-description mb-3">${truncatedDescription}</div>
                                 <div class="mt-auto">
-                                    <a href="${spotifyUrl}.html" target="_blank" rel="noopener noreferrer" class="btn btn-spotify w-100">
+                                    <a href="${spotifyUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-spotify w-100">
                                         <i class="bi bi-spotify me-2"></i>Listen on Spotify
                                     </a>
                                 </div>
