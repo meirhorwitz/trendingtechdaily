@@ -288,7 +288,7 @@ async function setupShareButtons(article) {
             }
         }
         
-        const shareUrl = `https://trendingtechdaily.com/${sectionSlug}/${getSafe(() => article.slug, '')}`;
+        const shareUrl = `${window.location.origin}/${sectionSlug}/${getSafe(() => article.slug, '')}`;
         const shareTitle = encodeURIComponent(getSafe(() => article.title, document.title));
         const shareExcerpt = encodeURIComponent(getSafe(() => article.excerpt, '').substring(0, 250));
         
@@ -767,3 +767,33 @@ document.addEventListener('DOMContentLoaded', function() {
         document.title = "Article Not Found | TrendingTechDaily";
     }
 });
+function getArticleInfoFromUrl() {
+    const pathParts = window.location.pathname.split('/').filter(part => part && part !== '');
+    console.log('URL path parts:', pathParts);
+    
+    // Check if it's /article/slug format (from index page)
+    if (pathParts.length === 2 && pathParts[0] === 'article') {
+        console.log('Found /article/slug format');
+        return { articleSlug: pathParts[1] };
+    }
+    
+    // Check for section-slug/article-slug pattern
+    if (pathParts.length >= 2) {
+        const sectionSlug = pathParts[0];
+        const articleSlug = pathParts[1];
+        
+        console.log('Found section/article URL:', { sectionSlug, articleSlug });
+        return { sectionSlug, articleSlug };
+    }
+    
+    // Legacy fallback for query parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const slugParam = urlParams.get('slug');
+    if (slugParam) {
+        console.log('Found slug in query params:', slugParam);
+        return { articleSlug: slugParam };
+    }
+    
+    console.log('No article info found in URL');
+    return null;
+}

@@ -167,7 +167,7 @@ function renderArticle(doc, container, isFeatured = false) {
         const article = { id: doc.id, ...doc.data() };
         const date = getSafe(() => new Date(article.createdAt.toDate()).toLocaleDateString(), 'N/A');
         const categoryName = getSafe(() => categoryCache[article.category], 'Uncategorized');
-        const articleUrl = article.slug ? `/article/${article.slug}` : '#';
+        const articleUrl = article.slug ? `/article.html?slug=${article.slug}` : '#';
         const cardClass = isFeatured ? 'featured-article' : 'article-card';
         const titleTag = isFeatured ? 'h2' : 'h3';
         const title = getSafe(() => article.title, 'Untitled Article');
@@ -202,7 +202,7 @@ function renderArticleCard(article) {
     try {
         const date = getSafe(() => new Date(article.createdAt.toDate()).toLocaleDateString(), 'N/A');
         const categoryName = categoryCache[article.category] || 'Uncategorized';
-        const articleUrl = getSafe(() => article.slug) ? `/article/${getSafe(() => article.slug)}` : '#';
+        const articleUrl = getSafe(() => article.slug) ? `/article.html?slug=${getSafe(() => article.slug)}` : '#';
         const title = getSafe(() => article.title, 'Untitled Article');
         const excerpt = getSafe(() => article.excerpt, '');
         const featuredImage = getSafe(() => article.featuredImage);
