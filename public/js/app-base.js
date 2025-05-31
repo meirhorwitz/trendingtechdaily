@@ -217,7 +217,7 @@ function loadSections() {
           if (!snap.empty) {
               snap.forEach(doc => {
                   const section = { id: doc.id, ...doc.data() };
-                  const url = `/${getSafe(() => section.slug, '#')}`;
+                  const url = `/category.html?slug=${getSafe(() => section.slug, '#')}`;
                   const name = getSafe(() => section.name, 'Unnamed Section');
                   navHTML += `<li class="nav-item"><a class="nav-link" href="${url}">${name}</a></li>`;
                   footerCategoriesHTML += `<li><a href="${url}">${name}</a></li>`;
@@ -365,7 +365,7 @@ function loadAndRenderApiArticles(category) {
         apiContainer.insertAdjacentHTML('beforeend', `
         <div id="${categoryId}" class="category-articles-section">
         <div class="section-header">
-            <h2 class="section-title">${getSafe(() => category.name, 'News')}</h2><a href="/${getSafe(() => category.slug, '#')}" class="see-all">See All</a></div>
+            <h2 class="section-title">${getSafe(() => category.name, 'News')}</h2><a href="/category.html?slug=${getSafe(() => category.slug, '#')}" class="see-all">See All</a></div>
             <div class="spinner-container"><div class="spinner-border" role="status"></div><p>Loading ${getSafe(() => category.name, 'news')} articles...</p></div>
           </div>`);
         categorySection = document.getElementById(categoryId);
@@ -415,7 +415,7 @@ function renderApiArticles(category, articles, sourceApi) {
       const categorySection = document.getElementById(categoryId);
       if (!categorySection) return;
 
-      const categoryUrl = `/${getSafe(() => category.slug, '#')}`;
+      const categoryUrl = `/category.html?slug=${getSafe(() => category.slug, '#')}`;
       const categoryName = getSafe(() => category.name, 'News');
 
       let sectionHtml = `<div class="section-header"><h2 class="section-title">${categoryName}</h2><a href="${categoryUrl}" class="see-all">See All</a></div>`;
@@ -465,7 +465,7 @@ function renderApiError(category, error) {
       categorySection.innerHTML = ''; // Also clear its content
   } else {
       // For any other type of error, display the original error message.
-      const categoryUrl = `/${getSafe(() => category.slug, '#')}`;
+      const categoryUrl = `/category.html?slug=${getSafe(() => category.slug, '#')}`;
       const categoryName = getSafe(() => category.name, 'News');
       console.error(`Rendering API error for ${categoryName}:`, error);
       categorySection.innerHTML = `
@@ -619,78 +619,3 @@ window.loadEmailAnalytics = function() {
 window.loadEmailDashboard = function() {
   loadEmailComponent('Dashboard');
 };
-// Category slug helper (added for clean URLs)
-window.categorySlugCache = {};
-
-window.getCategorySlug = async function(categoryId) {
-    if (!categoryId) return null;
-    
-    // Check cache first
-    if (window.categorySlugCache[categoryId]) {
-        return window.categorySlugCache[categoryId];
-    }
-    
-    try {
-        const doc = await db.collection('sections').doc(categoryId).get();
-        if (doc.exists) {
-            const slug = doc.data().slug;
-            // Cache it
-            window.categorySlugCache[categoryId] = slug;
-            return slug;
-        }
-    } catch (error) {
-        console.error('Error getting category slug:', error);
-    }
-    return null;
-};
-
-// Preload category slugs when sections are loaded
-document.addEventListener('sectionsLoaded', async () => {
-    try {
-        const snapshot = await db.collection('sections').where('active', '==', true).get();
-        snapshot.forEach(doc => {
-            window.categorySlugCache[doc.id] = doc.data().slug;
-        });
-        console.log('Category slugs preloaded:', window.categorySlugCache);
-    } catch (error) {
-        console.error('Error preloading category slugs:', error);
-    }
-});
-
-// Category slug helper (added for clean URLs)
-window.categorySlugCache = {};
-
-window.getCategorySlug = async function(categoryId) {
-    if (!categoryId) return null;
-    
-    // Check cache first
-    if (window.categorySlugCache[categoryId]) {
-        return window.categorySlugCache[categoryId];
-    }
-    
-    try {
-        const doc = await db.collection('sections').doc(categoryId).get();
-        if (doc.exists) {
-            const slug = doc.data().slug;
-            // Cache it
-            window.categorySlugCache[categoryId] = slug;
-            return slug;
-        }
-    } catch (error) {
-        console.error('Error getting category slug:', error);
-    }
-    return null;
-};
-
-// Preload category slugs when sections are loaded
-document.addEventListener('sectionsLoaded', async () => {
-    try {
-        const snapshot = await db.collection('sections').where('active', '==', true).get();
-        snapshot.forEach(doc => {
-            window.categorySlugCache[doc.id] = doc.data().slug;
-        });
-        console.log('Category slugs preloaded:', window.categorySlugCache);
-    } catch (error) {
-        console.error('Error preloading category slugs:', error);
-    }
-});

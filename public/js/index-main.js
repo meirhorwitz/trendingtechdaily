@@ -120,7 +120,7 @@ function loadMostRecentArticleAsFeatured() {
         });
 }
 
-async function loadLatestArticles() {
+function loadLatestArticles() {
     const container = document.getElementById('articles-container');
     if (!container || typeof db === 'undefined') {
         console.warn("Articles container or DB not ready for loadLatestArticles.");
@@ -128,7 +128,7 @@ async function loadLatestArticles() {
         return;
     }
     db.collection('articles').where('published','==',true).orderBy('createdAt','desc').limit(7).get()
-        .then(async snap => {
+        .then(snap => {
             if (snap.empty) {
                 container.innerHTML = '<p class="text-center text-muted">No recent articles found.</p>';
                 return;
@@ -136,25 +136,20 @@ async function loadLatestArticles() {
             let featuredSlug = null;
             const featuredLink = document.querySelector('#featured-article-container .article-title a');
             if (featuredLink?.href) {
-                try { 
-                    const url = new URL(featuredLink.href);
-                    featuredSlug = url.searchParams.get('slug') || url.pathname.split('/').pop();
-                } 
+                try { featuredSlug = new URLSearchParams(new URL(featuredLink.href).search).get('slug'); } 
                 catch(e) { console.warn("Could not parse featured slug"); }
             }
 
             let html = '<div class="article-grid">';
             let count = 0;
-            
-            // Process articles sequentially to handle async
-            for (const doc of snap.docs) {
+            snap.forEach(doc => {
                 const rawArticle = { id: doc.id, ...doc.data() };
                 const article = ensureReadingTime(rawArticle);
                 
-                if ((featuredSlug && article.slug === featuredSlug) || count >= 6) continue;
+                if ((featuredSlug && article.slug === featuredSlug) || count >= 6) return;
                 count++;
-                html += await renderArticleCard(article);
-            }
+                html += renderArticleCard(article);
+            });
             html += '</div>';
 
             container.innerHTML = count > 0 ? html : '<p class="text-center text-muted">No other recent articles found.</p>';
@@ -166,15 +161,13 @@ async function loadLatestArticles() {
 }
 
 // Renders a single Firestore article (Used by Featured)
-
-async function renderArticle(doc, container, isFeatured = false) {
+function renderArticle(doc, container, isFeatured = false) {
     if (!doc || !container) return;
     try {
         const article = { id: doc.id, ...doc.data() };
         const date = getSafe(() => new Date(article.createdAt.toDate()).toLocaleDateString(), 'N/A');
         const categoryName = getSafe(() => categoryCache[article.category], 'Uncategorized');
-        const categorySlug = await getCategorySlug(article.category);
-        const articleUrl = article.slug && categorySlug ? `/${categorySlug}/${article.slug}` : article.slug ? `/article.html?slug=${article.slug}` : '#';
+        const articleUrl = article.slug ? `/article.html?slug=${article.slug}` : '#';
         const cardClass = isFeatured ? 'featured-article' : 'article-card';
         const titleTag = isFeatured ? 'h2' : 'h3';
         const title = getSafe(() => article.title, 'Untitled Article');
@@ -205,12 +198,11 @@ async function renderArticle(doc, container, isFeatured = false) {
 }
 
 // Renders an article card HTML string
-async function renderArticleCard(article) {
+function renderArticleCard(article) {
     try {
         const date = getSafe(() => new Date(article.createdAt.toDate()).toLocaleDateString(), 'N/A');
         const categoryName = categoryCache[article.category] || 'Uncategorized';
-        const categorySlug = await getCategorySlug(article.category);
-        const articleUrl = article.slug && categorySlug ? `/${categorySlug}/${article.slug}` : article.slug ? `/article.html?slug=${article.slug}` : '#';
+        const articleUrl = getSafe(() => article.slug) ? `/article.html?slug=${getSafe(() => article.slug)}` : '#';
         const title = getSafe(() => article.title, 'Untitled Article');
         const excerpt = getSafe(() => article.excerpt, '');
         const featuredImage = getSafe(() => article.featuredImage);

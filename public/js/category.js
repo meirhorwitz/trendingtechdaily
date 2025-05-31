@@ -16,8 +16,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const sectionsCache = {};
 
     // Get category slug from URL
-    const pathParts = window.location.pathname.split('/').filter(Boolean);
-const categorySlug = pathParts[0] || null;
+    const urlParams = new URLSearchParams(window.location.search);
+    const categorySlug = urlParams.get('slug');
 
     // All functions specific to the category page are defined here
     function loadSections() {
@@ -43,8 +43,8 @@ const categorySlug = pathParts[0] || null;
                     // If you are using the global navbar from app-base.js, this line might not have a target.
                     // sectionsNavHTML += `<li class="nav-item"><a class="nav-link ${isActive}" href="/category.html?slug=${section.slug}">${section.name}</a></li>`;
                     
-                    footerLinksHTML += `<li><a href="/${section.slug}">${section.name}</a></li>`;
-                    categoriesListHTML += `<li><a href="/${section.slug}" ${isActive ? 'class="fw-bold"' : ''}>${section.name}</a></li>`;
+                    footerLinksHTML += `<li><a href="/category.html?slug=${section.slug}">${section.name}</a></li>`;
+                    categoriesListHTML += `<li><a href="/category.html?slug=${section.slug}" ${isActive ? 'class="fw-bold"' : ''}>${section.name}</a></li>`;
                 });
                 
                 // If #sections-nav exists, update it. Otherwise, it will fail silently.

@@ -1,6 +1,4 @@
 const { logger } = require('../config');
-const path = require('path');
-const fs = require('fs');
 
 /**
  * Simple article routing handler that serves article.html
@@ -10,11 +8,17 @@ exports.handleArticleRouting = async (req, res) => {
   try {
     logger.info('Handling article routing for path:', req.path);
     
-    // Set the correct content type
-    res.set('Content-Type', 'text/html');
+    // In production, we need to return the HTML directly
+    const articleHtml = `<!DOCTYPE html>
+<html>
+<head>
+    <script>window.location.href = '/article.html' + window.location.search + '&path=' + encodeURIComponent(window.location.pathname);</script>
+</head>
+<body>
+    <a href="/article.html">Click here if not redirected</a>
+</body>
+</html>`;
     
-    // Send the article.html file content
-    const articleHtml = fs.readFileSync(path.join(__dirname, '../../public/article.html'), 'utf8');
     res.status(200).send(articleHtml);
     
   } catch (error) {
@@ -31,13 +35,10 @@ exports.handleLegacyRedirects = (req, res, next) => {
     const urlPath = req.path;
     logger.info(`Processing legacy redirect for path: ${urlPath}`);
     
-    // Handle old article.html?id=xyz URLs
     if (urlPath === '/article.html' && req.query.id) {
-      // Let the frontend handle this
       return next();
     }
 
-    // Handle other legacy URLs
     const legacyUrls = {
       '/about.html': '/about',
       '/contact.html': '/contact', 
@@ -51,7 +52,6 @@ exports.handleLegacyRedirects = (req, res, next) => {
       return res.redirect(301, newUrl);
     }
 
-    // If no redirect is found, continue
     next();
   } catch (error) {
     logger.error('Error in legacy redirects:', error);
@@ -67,19 +67,17 @@ exports.handleDynamicRouting = async (req, res) => {
     const urlPath = req.path.substring(1); // Remove leading slash
     logger.info('Handling dynamic routing for path:', urlPath);
     
-    // List of static pages that should not be treated as categories
-    const staticPages = ['about', 'contact', 'privacy', 'terms', 'login', 'signup', 'stock-data', 'podcasts'];
+    // Return HTML that redirects to category.html with the slug
+    const categoryHtml = `<!DOCTYPE html>
+<html>
+<head>
+    <script>window.location.href = '/category.html?slug=' + encodeURIComponent('${urlPath}');</script>
+</head>
+<body>
+    <a href="/category.html?slug=${urlPath}">Click here if not redirected</a>
+</body>
+</html>`;
     
-    if (staticPages.includes(urlPath)) {
-      // This shouldn't happen as these are handled by earlier rewrites
-      res.status(404).send('Page not found');
-      return;
-    }
-    
-    // For any other single-segment path, treat it as a category
-    // Serve the category.html page
-    res.set('Content-Type', 'text/html');
-    const categoryHtml = fs.readFileSync(path.join(__dirname, '../../public/category.html'), 'utf8');
     res.status(200).send(categoryHtml);
     
   } catch (error) {
