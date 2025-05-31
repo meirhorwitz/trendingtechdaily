@@ -628,3 +628,40 @@ window.loadEmailAnalytics = function() {
 window.loadEmailDashboard = function() {
   loadEmailComponent('Dashboard');
 };
+// Category slug helper (added for clean URLs)
+window.categorySlugCache = {};
+
+window.getCategorySlug = async function(categoryId) {
+    if (!categoryId) return null;
+    
+    // Check cache first
+    if (window.categorySlugCache[categoryId]) {
+        return window.categorySlugCache[categoryId];
+    }
+    
+    try {
+        const doc = await db.collection('sections').doc(categoryId).get();
+        if (doc.exists) {
+            const slug = doc.data().slug;
+            // Cache it
+            window.categorySlugCache[categoryId] = slug;
+            return slug;
+        }
+    } catch (error) {
+        console.error('Error getting category slug:', error);
+    }
+    return null;
+};
+
+// Preload category slugs when sections are loaded
+document.addEventListener('sectionsLoaded', async () => {
+    try {
+        const snapshot = await db.collection('sections').where('active', '==', true).get();
+        snapshot.forEach(doc => {
+            window.categorySlugCache[doc.id] = doc.data().slug;
+        });
+        console.log('Category slugs preloaded:', window.categorySlugCache);
+    } catch (error) {
+        console.error('Error preloading category slugs:', error);
+    }
+});

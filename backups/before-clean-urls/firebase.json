@@ -8,48 +8,30 @@
     ],
     "rewrites": [
       {
-        "source": "/",
-        "destination": "/index.html"
-      },
-      {
-        "source": "/about",
-        "destination": "/about.html"
-      },
-      {
-        "source": "/contact",
-        "destination": "/contact.html"
-      },
-      {
-        "source": "/privacy",
-        "destination": "/privacy.html"
-      },
-      {
-        "source": "/terms",
-        "destination": "/terms.html"
-      },
-      {
-        "source": "/login",
-        "destination": "/login.html"
-      },
-      {
-        "source": "/signup",
-        "destination": "/signup.html"
-      },
-      {
-        "source": "/stock-data",
-        "destination": "/stock-data.html"
-      },
-      {
-        "source": "/podcasts",
-        "destination": "/podcasts.html"
-      },
-      {
-        "source": "/*/*",
+        "source": "/article/**",
         "function": "handleArticleRouting"
+      }
+    ],
+    "redirects": [
+      {
+        "source": "/about.html",
+        "destination": "/about",
+        "type": 301
       },
       {
-        "source": "/*",
-        "function": "handleDynamicRouting"
+        "source": "/contact.html",
+        "destination": "/contact",
+        "type": 301
+      },
+      {
+        "source": "/privacy.html",
+        "destination": "/privacy",
+        "type": 301
+      },
+      {
+        "source": "/terms.html",
+        "destination": "/terms",
+        "type": 301
       }
     ],
     "headers": [
@@ -98,13 +80,16 @@
         ]
       }
     ],
-    "trailingSlash": false
+    "trailingSlash": false,
+    "cleanUrls": false
   },
   "functions": {
     "source": "functions",
     "runtime": "nodejs18"
   },
   "firestore": {
+    "database": "(default)",
+    "location": "nam5",
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
