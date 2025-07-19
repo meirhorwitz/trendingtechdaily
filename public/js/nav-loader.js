@@ -196,8 +196,9 @@ function initializeResponsiveCategories() {
     });
 
     // Handle overflow categories in dropdown
-    if (hiddenCategories.length > 0 && moreDropdownMenu && moreDropdown) {
+    if (moreDropdownMenu && moreDropdown) {
       moreDropdownMenu.innerHTML = '';
+
       hiddenCategories.forEach(cat => {
         const li = document.createElement('li');
         const a = document.createElement('a');
@@ -207,9 +208,29 @@ function initializeResponsiveCategories() {
         li.appendChild(a);
         moreDropdownMenu.appendChild(li);
       });
-      moreDropdown.classList.remove('d-none');
-    } else if (moreDropdown) {
-      moreDropdown.classList.add('d-none');
+
+      // Always include Podcasts and Stock Data links
+      const podcastsLi = document.createElement('li');
+      const podcastsLink = document.createElement('a');
+      podcastsLink.className = 'dropdown-item';
+      podcastsLink.href = '/podcasts.html';
+      podcastsLink.innerHTML = '<i class="bi bi-mic me-1"></i>Podcasts';
+      podcastsLi.appendChild(podcastsLink);
+      moreDropdownMenu.appendChild(podcastsLi);
+
+      const stocksLi = document.createElement('li');
+      const stocksLink = document.createElement('a');
+      stocksLink.className = 'dropdown-item';
+      stocksLink.href = '/stock-data.html';
+      stocksLink.innerHTML = '<i class="bi bi-graph-up me-1"></i>Stocks';
+      stocksLi.appendChild(stocksLink);
+      moreDropdownMenu.appendChild(stocksLi);
+
+      if (moreDropdownMenu.children.length > 0) {
+        moreDropdown.classList.remove('d-none');
+      } else {
+        moreDropdown.classList.add('d-none');
+      }
     }
     
     // Add Stock Data link after categories (only if not already present)
