@@ -138,12 +138,37 @@ function showSearchSuggestions(query, suggestionsContainer) {
     }
 
     query = query.toUpperCase();
-    
-    // Filter stocks that match the query
-    const matches = STOCK_SYMBOLS.filter(stock => 
-        stock.symbol.includes(query) || 
+
+    const matches = STOCK_SYMBOLS.filter(stock =>
+        stock.symbol.includes(query) ||
         stock.name.toUpperCase().includes(query)
-    );
+    ).sort((a, b) => {
+        const q = query;
+        const aSymbol = a.symbol.toUpperCase();
+        const bSymbol = b.symbol.toUpperCase();
+        const aName = a.name.toUpperCase();
+        const bName = b.name.toUpperCase();
+
+        if (aSymbol === q && bSymbol !== q) return -1;
+        if (bSymbol === q && aSymbol !== q) return 1;
+
+        const aStarts = aSymbol.startsWith(q) || aName.startsWith(q);
+        const bStarts = bSymbol.startsWith(q) || bName.startsWith(q);
+        if (aStarts && !bStarts) return -1;
+        if (bStarts && !aStarts) return 1;
+
+        const aIdx = Math.min(
+            aSymbol.indexOf(q) !== -1 ? aSymbol.indexOf(q) : Number.MAX_VALUE,
+            aName.indexOf(q) !== -1 ? aName.indexOf(q) : Number.MAX_VALUE
+        );
+        const bIdx = Math.min(
+            bSymbol.indexOf(q) !== -1 ? bSymbol.indexOf(q) : Number.MAX_VALUE,
+            bName.indexOf(q) !== -1 ? bName.indexOf(q) : Number.MAX_VALUE
+        );
+        if (aIdx !== bIdx) return aIdx - bIdx;
+
+        return aSymbol.localeCompare(bSymbol);
+    });
 
     if (matches.length > 0) {
         let suggestionsHTML = '<div class="suggestions-container">';
@@ -669,13 +694,21 @@ function makeStockCardsClickable() {
 // Open stock detail modal
 async function openStockDetail(symbol) {
     if (!symbol || !stockDetailModal) return;
-    
+
     // Reset modal content
     document.getElementById('detail-symbol').textContent = symbol;
     document.getElementById('detail-name').textContent = 'Loading...';
     document.getElementById('detail-price').textContent = '--';
     document.getElementById('detail-change').textContent = '';
     document.getElementById('detail-change').className = '';
+    const descContainer = document.getElementById('company-description');
+    if (descContainer) {
+        descContainer.style.display = 'none';
+    }
+    const descText = document.getElementById('company-desc-text');
+    if (descText) {
+        descText.textContent = '';
+    }
     
     // Find company info
     const stockInfo = STOCK_SYMBOLS.find(s => s.symbol === symbol);
@@ -803,9 +836,10 @@ async function fetchCompanyProfile(symbol) {
         
         if (data && data.name) {
             document.getElementById('detail-name').textContent = data.name;
-            
-            const descEl = document.getElementById('detail-description');
-            if (descEl) {
+
+            const descEl = document.getElementById('company-desc-text');
+            const container = document.getElementById('company-description');
+            if (descEl && container) {
                 let description = '';
                 if (data.name) description += `${data.name} (${symbol}) `;
                 if (data.exchange) description += `is listed on the ${data.exchange}. `;
@@ -815,13 +849,13 @@ async function fetchCompanyProfile(symbol) {
                     const marketCap = (data.marketCapitalization / 1000).toFixed(2);
                     description += `Market Cap: $${marketCap}B. `;
                 }
-                
                 descEl.textContent = description || 'No company description available.';
+                container.style.display = 'block';
             }
         }
     } catch (error) {
         console.error('Error fetching company profile:', error);
-        const descEl = document.getElementById('detail-description');
+        const descEl = document.getElementById('company-desc-text');
         if (descEl) {
             descEl.textContent = `Unable to load company information for ${symbol}.`;
         }
