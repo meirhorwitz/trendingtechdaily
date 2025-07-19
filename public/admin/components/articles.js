@@ -499,7 +499,12 @@ if (typeof window.articlesManagerInitialized === 'undefined') {
                         <div class="mb-3">
                             <label for="embedType" class="form-label">Type</label>
                             <select class="form-select" id="embedType">
-                                <option value="custom">Custom HTML</option><option value="twitter">Twitter/X</option><option value="youtube">YouTube</option><option value="instagram">Instagram</option>
+                                <option value="custom">Custom HTML</option>
+                                <option value="twitter">Twitter/X</option>
+                                <option value="facebook">Facebook</option>
+                                <option value="instagram">Instagram</option>
+                                <option value="linkedin">LinkedIn</option>
+                                <option value="youtube">YouTube</option>
                             </select>
                         </div>
                         <div id="embedHelpText" class="mb-3 small text-muted">Paste HTML embed code.</div>
@@ -522,15 +527,51 @@ if (typeof window.articlesManagerInitialized === 'undefined') {
         const embedModal = new bootstrap.Modal(document.getElementById('embedHtmlModal'));
         embedModal.show();
 
-        document.getElementById('embedType').addEventListener('change', function() { /* ... (embed type help text logic) ... */ });
+        const embedTypeSelect = document.getElementById('embedType');
+        const embedHelpText = document.getElementById('embedHelpText');
+        const embedHtmlTextarea = document.getElementById('embedHtmlCode');
+
+        embedTypeSelect.addEventListener('change', function() {
+            const type = embedTypeSelect.value;
+            embedHelpText.textContent = 'Paste HTML embed code.';
+            embedHtmlTextarea.placeholder = '<iframe src="..."></iframe>';
+            if (type === 'twitter') {
+                embedHelpText.textContent = 'Enter the full X/Twitter post URL.';
+                embedHtmlTextarea.placeholder = 'https://twitter.com/...';
+            } else if (type === 'facebook') {
+                embedHelpText.textContent = 'Enter the Facebook post URL.';
+                embedHtmlTextarea.placeholder = 'https://www.facebook.com/...';
+            } else if (type === 'instagram') {
+                embedHelpText.textContent = 'Enter the Instagram post URL.';
+                embedHtmlTextarea.placeholder = 'https://www.instagram.com/...';
+            } else if (type === 'linkedin') {
+                embedHelpText.textContent = 'Enter the LinkedIn post URL.';
+                embedHtmlTextarea.placeholder = 'https://www.linkedin.com/...';
+            }
+        });
+
         document.getElementById('insertHtmlBtn').addEventListener('click', (e) => {
             e.preventDefault(); e.stopPropagation();
-            const htmlCode = document.getElementById('embedHtmlCode').value.trim();
-            if (!htmlCode) { alert('Please enter HTML.'); return; }
+            let htmlCode = embedHtmlTextarea.value.trim();
+            if (!htmlCode) { alert('Please enter HTML or URL.'); return; }
             const shouldWrap = document.getElementById('wrapEmbed').checked;
             let finalHtml = htmlCode;
+
+            const type = embedTypeSelect.value;
+            if (type === 'twitter') {
+                finalHtml = `<blockquote class="twitter-tweet"><a href="${htmlCode}"></a></blockquote>`;
+            } else if (type === 'facebook') {
+                finalHtml = `<div class="fb-post" data-href="${htmlCode}" data-width="500"></div>`;
+            } else if (type === 'instagram') {
+                finalHtml = `<blockquote class="instagram-media" data-instgrm-permalink="${htmlCode}" data-instgrm-version="14"></blockquote>`;
+            } else if (type === 'linkedin') {
+                const idMatch = htmlCode.match(/(?:\/|%3A)([0-9]+)(?:\?|$)/);
+                const shareId = idMatch ? idMatch[1] : '';
+                finalHtml = `<iframe src="https://www.linkedin.com/embed/feed/update/urn:li:share:${shareId}" height="480" width="640" frameborder="0" allowfullscreen="" title="LinkedIn Post"></iframe>`;
+            }
+
             if (shouldWrap) {
-                finalHtml = `<div class="embedded-content-container" style="display: flex; justify-content: center; margin: 20px 0;">${htmlCode}</div>`;
+                finalHtml = `<div class="embedded-content-container" style="display: flex; justify-content: center; margin: 20px 0;">${finalHtml}</div>`;
             }
             if (quillEditorInstance) {
                 const range = quillEditorInstance.getSelection(true);
