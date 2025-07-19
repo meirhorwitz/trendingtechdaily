@@ -1,7 +1,7 @@
 // functions/config.js
 
-const admin = require('firebase-admin');
-const { getFirestore } = require('firebase-admin/firestore');
+const admin = require("firebase-admin");
+const { getFirestore } = require("firebase-admin/firestore");
 const logger = require("firebase-functions/logger");
 
 // Initialize Firebase Admin SDK only once.
@@ -20,8 +20,8 @@ const CONFIG = {
     Gadgets: "https://images.unsplash.com/photo-1526570207772-2a4269e3ac40?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
     Startups: "https://images.unsplash.com/photo-1661956602116-661d5c25f9f4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
     Crypto: "https://images.unsplash.com/photo-1640340002902-a0588c2a6f38?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
-    default: "https://images.unsplash.com/photo-1488590528505-98fb2e5ea1c4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"
-  }
+    default: "https://images.unsplash.com/photo-1488590528505-98fb2e5ea1c4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
+  },
 };
 
 module.exports = {

@@ -1,15 +1,15 @@
 // functions/api/routes/admin.js
 
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { requireAdmin } = require('../../middleware/auth');
-const { logger } = require('../../config');
+const { requireAdmin } = require("../../middleware/auth");
+const { logger } = require("../../config");
 
 let uploadsAdmin;
 try {
   // This path should be correct: api/routes/admin.js -> admin/uploads.js
-  uploadsAdmin = require('../../admin/uploads');
-  if (!uploadsAdmin || typeof uploadsAdmin.uploadFile !== 'function') {
+  uploadsAdmin = require("../../admin/uploads");
+  if (!uploadsAdmin || typeof uploadsAdmin.uploadFile !== "function") {
     logger.error("Critical: 'uploadsAdmin' module loaded but 'uploadFile' function is missing or not a function. Uploads will fail.");
     // uploadsAdmin will be set, but the check below will prevent its use if uploadFile is invalid
   } else {
@@ -21,9 +21,9 @@ try {
   // The route handler below will then correctly state that functionality is unavailable.
 }
 
-router.post('/upload', requireAdmin, (req, res) => {
-  logger.info('POST /admin/upload route hit.');
-  if (uploadsAdmin && typeof uploadsAdmin.uploadFile === 'function') {
+router.post("/upload", requireAdmin, (req, res) => {
+  logger.info("POST /admin/upload route hit.");
+  if (uploadsAdmin && typeof uploadsAdmin.uploadFile === "function") {
     uploadsAdmin.uploadFile(req, res);
   } else {
     logger.error("Upload functionality is not available because 'uploadsAdmin.uploadFile' is not a valid function.");
@@ -31,10 +31,10 @@ router.post('/upload', requireAdmin, (req, res) => {
   }
 });
 
-router.get('/admin-test-route', (req, res) => {
-    logger.info('GET /admin/admin-test-route called (full admin.js)');
-    res.status(200).send('Full Admin GET route is responding.');
+router.get("/admin-test-route", (req, res) => {
+  logger.info("GET /admin/admin-test-route called (full admin.js)");
+  res.status(200).send("Full Admin GET route is responding.");
 });
 
-logger.info('Full admin.js router module loaded.');
+logger.info("Full admin.js router module loaded.");
 module.exports = router;

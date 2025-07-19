@@ -1,7 +1,7 @@
 // admin/email/service-account-email.js
-const nodemailer = require('nodemailer');
-const { google } = require('googleapis');
-const admin = require('firebase-admin');
+const nodemailer = require("nodemailer");
+const { google } = require("googleapis");
+const admin = require("firebase-admin");
 const { onRequest } = require("firebase-functions/v2/https");
 const logger = require("firebase-functions/logger");
 
@@ -9,7 +9,7 @@ const logger = require("firebase-functions/logger");
 const db = admin.firestore();
 
 // Email address to impersonate (must be in your Google Workspace domain)
-const EMAIL_TO_IMPERSONATE = 'info@trendingtechdaily.com';
+const EMAIL_TO_IMPERSONATE = "info@trendingtechdaily.com";
 
 // Create a JWT auth client using service account
 const createTransporter = async () => {
@@ -41,8 +41,8 @@ const createTransporter = async () => {
       serviceAccount.client_email,
       null,
       serviceAccount.private_key,
-      ['https://mail.google.com/'],
-      EMAIL_TO_IMPERSONATE
+      ["https://mail.google.com/"],
+      EMAIL_TO_IMPERSONATE,
     );
     
     // Authorize the client
@@ -51,14 +51,14 @@ const createTransporter = async () => {
     
     // Create the nodemailer transporter
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
+      service: "gmail",
       auth: {
-        type: 'OAuth2',
+        type: "OAuth2",
         user: EMAIL_TO_IMPERSONATE,
         serviceClient: serviceAccount.client_email,
         privateKey: serviceAccount.private_key,
-        accessToken: jwtClient.credentials.access_token
-      }
+        accessToken: jwtClient.credentials.access_token,
+      },
     });
     
     // Verify the transporter configuration
@@ -76,7 +76,7 @@ const createTransporter = async () => {
 const processEmailQueue = onRequest(
   { 
     secrets: ["GMAIL_SERVICE_ACCOUNT"],
-    region: 'us-central1'
+    region: "us-central1",
   }, 
   async (req, res) => {
     logger.info("processEmailQueue: Function triggered.");
@@ -116,7 +116,7 @@ const processEmailQueue = onRequest(
       logger.error("processEmailQueue: Critical error in queue processing:", error);
       res.status(500).send(`Error processing email queue: ${error.message}`);
     }
-  }
+  },
 );
 
 // Process a single email task
@@ -125,7 +125,7 @@ async function processEmailTask(task, taskRef, transporter) {
     // Mark task as processing
     await taskRef.update({
       status: "processing",
-      processingStarted: admin.firestore.FieldValue.serverTimestamp()
+      processingStarted: admin.firestore.FieldValue.serverTimestamp(),
     });
     
     // Get tracking info
@@ -146,7 +146,7 @@ async function processEmailTask(task, taskRef, transporter) {
     if (trackingDoc && trackingDoc.exists) {
       await trackingDoc.ref.update({
         sentAt: admin.firestore.FieldValue.serverTimestamp(),
-        status: "delivered"
+        status: "delivered",
       });
       
       // Update campaign stats if applicable
@@ -154,7 +154,7 @@ async function processEmailTask(task, taskRef, transporter) {
       
       if (trackingData.campaignId) {
         await db.collection("campaigns").doc(trackingData.campaignId).update({
-          "stats.delivered": admin.firestore.FieldValue.increment(1)
+          "stats.delivered": admin.firestore.FieldValue.increment(1),
         });
       }
       
@@ -162,7 +162,7 @@ async function processEmailTask(task, taskRef, transporter) {
       if (trackingData.subscriberId) {
         await db.collection("subscribers").doc(trackingData.subscriberId).update({
           emailsSent: admin.firestore.FieldValue.increment(1),
-          lastEmailSent: admin.firestore.FieldValue.serverTimestamp()
+          lastEmailSent: admin.firestore.FieldValue.serverTimestamp(),
         });
       }
     }
@@ -170,7 +170,7 @@ async function processEmailTask(task, taskRef, transporter) {
     // Mark task as complete
     await taskRef.update({
       status: "completed",
-      completedAt: admin.firestore.FieldValue.serverTimestamp()
+      completedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
     
     logger.info(`processEmailTask: Email sent successfully for task ${taskRef.id}.`);
@@ -181,7 +181,7 @@ async function processEmailTask(task, taskRef, transporter) {
     await taskRef.update({
       status: "error",
       error: error.message,
-      errorAt: admin.firestore.FieldValue.serverTimestamp()
+      errorAt: admin.firestore.FieldValue.serverTimestamp(),
     });
     
     // Update tracking status if available
@@ -193,7 +193,7 @@ async function processEmailTask(task, taskRef, transporter) {
         await trackingRef.update({ 
           status: "failed", 
           error: error.message, 
-          errorAt: admin.firestore.FieldValue.serverTimestamp() 
+          errorAt: admin.firestore.FieldValue.serverTimestamp(), 
         });
       }
     }
@@ -209,13 +209,13 @@ async function sendEmail(emailData, transporter) {
     
     // Create mail options
     const mailOptions = {
-      from: emailData.from || 'TrendingTechDaily <info@trendingtechdaily.com>',
+      from: emailData.from || "TrendingTechDaily <info@trendingtechdaily.com>",
       to: emailData.to,
       subject: emailData.subject,
       html: emailData.html,
       cc: emailData.cc,
       bcc: emailData.bcc,
-      replyTo: emailData.replyTo
+      replyTo: emailData.replyTo,
     };
     
     // Send email
@@ -232,7 +232,7 @@ async function sendEmail(emailData, transporter) {
 const testEmail = onRequest(
   { 
     secrets: ["GMAIL_SERVICE_ACCOUNT"],
-    region: 'us-central1'
+    region: "us-central1",
   }, 
   async (req, res) => {
     try {
@@ -243,10 +243,10 @@ const testEmail = onRequest(
       
       // Send test email
       const info = await transporter.sendMail({
-        from: 'TrendingTechDaily <info@trendingtechdaily.com>',
-        to: 'meirho01@gmail.com',
-        subject: 'Test Email from Firebase Function',
-        html: '<h1>Test Email</h1><p>This is a test email from your Firebase function using service account authentication.</p>'
+        from: "TrendingTechDaily <info@trendingtechdaily.com>",
+        to: "meirho01@gmail.com",
+        subject: "Test Email from Firebase Function",
+        html: "<h1>Test Email</h1><p>This is a test email from your Firebase function using service account authentication.</p>",
       });
       
       logger.info(`Test email sent: ${info.messageId}`);
@@ -255,11 +255,11 @@ const testEmail = onRequest(
       logger.error("Error sending test email:", error);
       res.status(500).send(`Error sending test email: ${error.message}`);
     }
-  }
+  },
 );
 
 // Export functions
 module.exports = {
   processEmailQueue,
-  testEmail
+  testEmail,
 };

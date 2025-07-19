@@ -42,9 +42,9 @@
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8142734137865758" crossorigin="anonymous"></script>
 
     <!-- Favicons -->
-    <link rel="icon" href="favicon.ico" sizes="any">
-    <link rel="icon" href="favicon.svg.html" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="apple-touch-icon.png.html">
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <link rel="stylesheet" href="css/podcasts.css" />
 
 </head>
@@ -86,47 +86,13 @@
         </div>
     </main>
 
-    <!-- Footer (matching index page structure) -->
-    <footer class="footer">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-3 mb-4 mb-md-0">
-                    <h5 id="footer-site-title">TrendingTech Daily</h5>
-                    <p id="footer-description" class="small text-muted">Your source for the latest in technology trends and insights.</p>
-                </div>
-                <div class="col-md-3 mb-4 mb-md-0">
-                    <h5>Quick Links</h5>
-                    <ul class="footer-links">
-                        <li><a href="index.html">Home</a></li>
-                        <li><a href="podcasts.html">Podcasts</a></li>
-                        <li><a href="about.html">About Us</a></li>
-                        <li><a href="privacy.html">Privacy Policy</a></li>
-                        <li><a href="terms.html">Terms of Service</a></li>
-                    </ul>
-                </div>
-                <div class="col-md-3 mb-4 mb-md-0">
-                    <h5>Categories</h5>
-                    <ul class="footer-links" id="footer-categories-list">
-                        <li class="text-muted small fst-italic">Loading...</li>
-                    </ul>
-                </div>
-                <div class="col-md-3">
-                    <h5>Contact Us</h5>
-                    <p class="small">
-                        <i class="bi bi-envelope-fill me-1"></i><span id="contact-email">Info@trendingtechdaily.com</span><br>
-                    </p>
-                    <div id="footer-social-links" class="mt-2"></div>
-                </div>
-            </div>
-            <div class="copyright">
-                <span id="footer-text">&copy; <span id="current-year"></span> TrendingTech Daily. All rights reserved.</span>
-            </div>
-        </div>
-    </footer>
+    <!-- Footer Placeholder -->
+    <div id="footer-placeholder"></div>
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/app-base.js"></script>
+    <script src="/js/nav-loader.js"></script>
 
     <script>
         // Helper function to safely get properties
@@ -210,7 +176,7 @@
 
             let htmlContent = '';
             podcasts.forEach(podcast => {
-                const imageUrl = getSafe(() => podcast.imageUrl, 'img/default-podcast-art.png');
+                const imageUrl = getSafe(() => podcast.imageUrl, '');
                 const podcastName = getSafe(() => podcast.name, 'Untitled Podcast');
                 const publisher = getSafe(() => podcast.publisher, 'N/A');
                 let description = getSafe(() => podcast.html_description);
@@ -227,13 +193,13 @@
                 htmlContent += `
                     <div class="col">
                         <div class="card h-100 podcast-card shadow-sm">
-                            <img src="${imageUrl}.html" class="card-img-top" alt="${podcastName}" onerror="this.onerror=null; this.src='img/default-podcast-art.png';">
+                            <img src="${imageUrl}" class="card-img-top" alt="${podcastName}">
                             <div class="card-body">
                                 <h5 class="card-title">${podcastName}</h5>
                                 <p class="card-text small text-muted mb-2">By: ${publisher}</p>
                                 <div class="podcast-description mb-3">${truncatedDescription}</div>
                                 <div class="mt-auto">
-                                    <a href="${spotifyUrl}.html" target="_blank" rel="noopener noreferrer" class="btn btn-spotify w-100">
+                                    <a href="${spotifyUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-spotify w-100">
                                         <i class="bi bi-spotify me-2"></i>Listen on Spotify
                                     </a>
                                 </div>

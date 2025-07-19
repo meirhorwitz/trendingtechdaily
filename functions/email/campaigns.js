@@ -1,7 +1,7 @@
 // functions/email/campaigns.js
 
-const { db, logger, admin } = require('../config');
-const { HttpsError } = require('firebase-functions/v2/https');
+const { db, logger, admin } = require("../config");
+const { HttpsError } = require("firebase-functions/v2/https");
 
 // --- Placeholder Implementations ---
 // TODO: Replace these with your actual logic.
@@ -43,17 +43,17 @@ async function cancelCampaign({ auth, data }) {
 }
 
 async function processCampaignSend({ data }) {
-    const { campaignId } = data;
-    logger.info(`Processing campaign send for campaignId: ${campaignId}`);
+  const { campaignId } = data;
+  logger.info(`Processing campaign send for campaignId: ${campaignId}`);
 
-    // This function would typically be triggered by a scheduler.
-    // 1. Fetch the campaign details from Firestore.
-    // 2. Fetch the subscriber list associated with the campaign.
-    // 3. For each subscriber, create a job/task in an 'emailQueue' collection in Firestore.
-    //    This task should contain subscriber details, templateId, campaignId, etc.
-    // 4. Update the campaign status to 'sending' or 'sent'.
+  // This function would typically be triggered by a scheduler.
+  // 1. Fetch the campaign details from Firestore.
+  // 2. Fetch the subscriber list associated with the campaign.
+  // 3. For each subscriber, create a job/task in an 'emailQueue' collection in Firestore.
+  //    This task should contain subscriber details, templateId, campaignId, etc.
+  // 4. Update the campaign status to 'sending' or 'sent'.
 
-    return { success: true, message: `Campaign ${campaignId} is being processed.` };
+  return { success: true, message: `Campaign ${campaignId} is being processed.` };
 }
 
 

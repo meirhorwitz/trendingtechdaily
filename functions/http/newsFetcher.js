@@ -1,7 +1,7 @@
 // functions/http/newsFetcher.js
 
-const { logger } = require('../config');
-const { fetchAllNews } = require('../services/newsService');
+const { logger } = require("../config");
+const { fetchAllNews } = require("../services/newsService");
 
 /**
  * An HTTP-triggered function to manually start the news fetching process.

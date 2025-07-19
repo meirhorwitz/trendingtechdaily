@@ -1,228 +1,232 @@
-// This file contains logic ONLY for the category page.
-// It assumes that 'app-base.js' has already been loaded and has created the global 'db' variable.
+// /js/category.js - Complete rewrite
 
-document.addEventListener('DOMContentLoaded', function() {
-    console.log("category.js: Script loaded. Running category page logic.");
+// Make functions globally accessible
+window.loadCategory = loadCategory;
+window.loadCategoryArticles = loadCategoryArticles;
 
-    // This is a safety check. If 'db' doesn't exist, it means app-base.js failed or was not loaded first.
+// Helper function
+function getSafe(fn, defaultValue = '') {
+    try {
+        const value = fn();
+        return (value !== null && value !== undefined) ? value : defaultValue;
+    } catch (e) {
+        return defaultValue;
+    }
+}
+
+// Load category data
+function loadCategory(slug) {
+    console.log('=== LOADING CATEGORY ===', slug);
+    if (!slug) {
+        showError('No category specified.');
+        return;
+    }
+    
+    // Wait for db to be ready if not already
     if (typeof db === 'undefined') {
-        console.error("FATAL ERROR in category.js: The Firebase 'db' object is not defined. Ensure 'app-base.js' is loaded before this script.");
-        // Display a user-friendly error on the page
-        document.body.innerHTML = '<div style="padding: 2rem; text-align: center;"><h1>Application Error</h1><p>A critical file failed to load. Please try refreshing the page.</p></div>';
-        return; // Stop execution of this script
+        console.log('Waiting for database...');
+        setTimeout(() => loadCategory(slug), 100);
+        return;
     }
 
-    // Cache for storing section data
-    const sectionsCache = {};
+    // Update URL to new structure
+    const correctUrl = `/${slug}`;
+    if (window.location.pathname !== correctUrl) {
+        console.log('Updating URL to:', correctUrl);
+        window.history.replaceState({}, '', correctUrl);
+    }
 
-    // Get category slug from URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const categorySlug = urlParams.get('slug');
+    console.log('Querying database for category:', slug);
+    db.collection('sections')
+        .where('slug', '==', slug)
+        .where('active', '==', true)
+        .limit(1)
+        .get()
+        .then(snapshot => {
+            console.log('Query completed. Found documents:', snapshot.size);
+            if (snapshot.empty) {
+                console.error('Category not found for slug:', slug);
+                showError('Category not found or is not active.');
+                return;
+            }
+            
+            const categoryDoc = snapshot.docs[0];
+            const category = categoryDoc.data();
+            const categoryId = categoryDoc.id;
+            
+            console.log('Category data:', { id: categoryId, name: category.name });
 
-    // All functions specific to the category page are defined here
-    function loadSections() {
-        db.collection('sections')
-            .where('active', '==', true)
-            .orderBy('order')
-            .get()
-            .then(snapshot => {
-                if (snapshot.empty) {
-                    return;
+            // Update page elements
+            document.title = `${category.name} Articles - TrendingTech Daily`;
+            
+            const categoryTitle = document.getElementById('category-title');
+            if (categoryTitle) {
+                categoryTitle.textContent = category.name;
+                console.log('Updated title element');
+            } else {
+                console.warn('category-title element not found - creating it');
+                const main = document.querySelector('main');
+                if (main) {
+                    const container = main.querySelector('.container') || main;
+                    container.innerHTML = `
+                        <h1 id="category-title" class="mb-3">${category.name}</h1>
+                        <p id="category-description" class="lead">${category.description || ''}</p>
+                        <div id="articles-container">Loading articles...</div>
+                    `;
                 }
+            }
+            
+            const categoryDescription = document.getElementById('category-description');
+            if (categoryDescription) {
+                categoryDescription.textContent = category.description || '';
+            }
+            
+            // Load articles
+            loadCategoryArticles(categoryId, slug);
+        })
+        .catch(error => {
+            console.error('Database error:', error);
+            showError('Failed to load category. Database error: ' + error.message);
+        });
+}
 
-                let sectionsNavHTML = '';
-                let footerLinksHTML = '';
-                let categoriesListHTML = '';
+// Load articles for a category
+function loadCategoryArticles(categoryId, categorySlug) {
+    console.log('=== LOADING ARTICLES ===', { categoryId, categorySlug });
+    
+    if (typeof db === 'undefined') {
+        console.error('Database not available');
+        return;
+    }
+    
+    let articlesContainer = document.getElementById('articles-container');
+    
+    if (!articlesContainer) {
+        console.error('articles-container not found!');
+        return;
+    }
 
-                snapshot.forEach(doc => {
-                    const section = doc.data();
-                    sectionsCache[section.slug] = { id: doc.id, ...section };
-                    const isActive = section.slug === categorySlug ? 'active' : '';
+    console.log('Querying articles for category:', categoryId);
+    db.collection('articles')
+        .where('category', '==', categoryId)
+        .where('published', '==', true)
+        .orderBy('createdAt', 'desc')
+        .limit(20)
+        .get()
+        .then(snapshot => {
+            console.log('Found articles:', snapshot.size);
+            
+            if (snapshot.empty) {
+                articlesContainer.innerHTML = '<p class="text-center text-muted">No articles found in this category.</p>';
+                return;
+            }
 
-                    // This part seems to be for a secondary nav that was removed.
-                    // If you are using the global navbar from app-base.js, this line might not have a target.
-                    // sectionsNavHTML += `<li class="nav-item"><a class="nav-link ${isActive}" href="/category.html?slug=${section.slug}">${section.name}</a></li>`;
-                    
-                    footerLinksHTML += `<li><a href="/category.html?slug=${section.slug}">${section.name}</a></li>`;
-                    categoriesListHTML += `<li><a href="/category.html?slug=${section.slug}" ${isActive ? 'class="fw-bold"' : ''}>${section.name}</a></li>`;
-                });
+            let articlesHTML = '<div class="row">';
+            
+            snapshot.forEach(doc => {
+                const article = { id: doc.id, ...doc.data() };
+                const date = getSafe(() => new Date(article.createdAt.toDate()).toLocaleDateString(), 'N/A');
+                const title = getSafe(() => article.title, 'Untitled');
+                const excerpt = getSafe(() => article.excerpt, '');
+                const featuredImage = getSafe(() => article.featuredImage);
+                const author = getSafe(() => article.author);
+                const readingTime = getSafe(() => article.readingTimeMinutes);
+                const articleSlug = getSafe(() => article.slug, '');
                 
-                // If #sections-nav exists, update it. Otherwise, it will fail silently.
-                const sectionsNavContainer = document.getElementById('sections-nav');
-                if(sectionsNavContainer) sectionsNavContainer.innerHTML = sectionsNavHTML;
+                const articleUrl = `/${categorySlug}/${articleSlug}`;
 
-                document.getElementById('footer-links').innerHTML = footerLinksHTML;
-                document.getElementById('categories-list').innerHTML = categoriesListHTML;
-            })
-            .catch(error => {
-                console.error('Error loading sections:', error);
-            });
-    }
-
-    function loadCategory(slug) {
-        db.collection('sections')
-            .where('slug', '==', slug)
-            .where('active', '==', true)
-            .limit(1)
-            .get()
-            .then(snapshot => {
-                if (snapshot.empty) {
-                    showError('Category not found or is not active.');
-                    return;
-                }
-                const categoryDoc = snapshot.docs[0];
-                const category = categoryDoc.data();
-                const categoryId = categoryDoc.id;
-
-                document.title = `${category.name} Articles - TrendingTech Daily`;
-                let metaDesc = document.querySelector('meta[name="description"]') || document.createElement('meta');
-                if(!metaDesc.name) {
-                    metaDesc.setAttribute('name', 'description');
-                    document.head.appendChild(metaDesc);
-                }
-                metaDesc.setAttribute('content', (category.description || `Articles related to ${category.name}`).substring(0, 160));
-                
-                document.getElementById('category-title').textContent = category.name;
-                document.getElementById('category-description').textContent = category.description || '';
-                
-                loadCategoryArticles(categoryId);
-            })
-            .catch(error => {
-                console.error('Error loading category:', error);
-                showError('Failed to load the category information.');
-            });
-    }
-
-    function ensureReadingTime(article) {
-        if (typeof article.readingTimeMinutes === 'number' && article.readingTimeMinutes > 0) return article;
-        const content = article.content || '';
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = content;
-        const textContent = tempDiv.textContent || tempDiv.innerText || '';
-        const wordCount = textContent.trim().split(/\s+/).filter(Boolean).length;
-        const minutes = Math.ceil(wordCount / 225) || 1;
-        return { ...article, readingTimeMinutes: minutes };
-    }
-
-    function loadCategoryArticles(categoryId) {
-        const articlesContainer = document.getElementById('articles-container');
-        db.collection('articles')
-            .where('category', '==', categoryId)
-            .where('published', '==', true)
-            .orderBy('createdAt', 'desc')
-            .get()
-            .then(snapshot => {
-                if (snapshot.empty) {
-                    articlesContainer.innerHTML = `<div class="text-center py-5"><h3>No articles found</h3><p>There are no articles in this category yet.</p></div>`;
-                    return;
-                }
-                let articlesHtml = '<div class="article-grid">';
-                snapshot.forEach(doc => {
-                    const article = ensureReadingTime(doc.data());
-                    const date = article.createdAt ? new Date(article.createdAt.toDate()).toLocaleDateString() : 'N/A';
-                    let categoryName = '';
-                    if (article.category) {
-                        for (let slug in sectionsCache) {
-                            if (sectionsCache[slug].id === article.category) {
-                                categoryName = sectionsCache[slug].name;
-                                break;
-                            }
-                        }
-                    }
-                    const readingTime = article.readingTimeMinutes;
-                    articlesHtml += `
-                        <div class="article-card ${!article.featuredImage ? 'no-image' : ''}">
-                            <div class="article-image-container ${!article.featuredImage ? 'no-image' : ''}">
-                                ${article.featuredImage ? `<div class="category-badge" data-category="${categoryName}">${categoryName}</div><img src="${article.featuredImage}" alt="${article.title}" class="article-image">` : ''}
-                            </div>
-                            <div class="article-content">
-                                <h3 class="article-title"><a href="/article.html?slug=${article.slug}">${article.title}</a></h3>
-                                <p class="article-description">${article.excerpt || ''}</p>
-                                <div class="article-meta">
-                                    <span>Published on ${date}</span>
-                                    ${readingTime ? `<span class="ms-auto text-muted small"><i class="bi bi-clock-history me-1"></i>${readingTime} min read</span>` : ''}
+                articlesHTML += `
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            ${featuredImage ? `
+                            <img src="${featuredImage}" class="card-img-top" alt="${title}" loading="lazy">
+                            ` : ''}
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <a href="${articleUrl}" class="text-decoration-none">${title}</a>
+                                </h5>
+                                <p class="card-text">${excerpt}</p>
+                                <div class="card-footer bg-transparent">
+                                    <small class="text-muted">
+                                        ${date}
+                                        ${author ? ` • ${author}` : ''}
+                                        ${readingTime ? ` • ${readingTime} min read` : ''}
+                                    </small>
                                 </div>
                             </div>
-                        </div>`;
-                });
-                articlesHtml += '</div>';
-                articlesContainer.innerHTML = articlesHtml;
-            })
-            .catch(error => {
-                console.error('Error loading articles:', error);
-                articlesContainer.innerHTML = `<div class="alert alert-danger"><p>Failed to load articles. Please try again later.</p></div>`;
+                        </div>
+                    </div>
+                `;
             });
-    }
-
-    function loadRecentArticles() {
-        db.collection('articles')
-            .where('published', '==', true)
-            .orderBy('createdAt', 'desc')
-            .limit(5)
-            .get()
-            .then(snapshot => {
-                const recentList = document.getElementById('recent-articles-list');
-                if (snapshot.empty) {
-                    recentList.innerHTML = '<li>No articles found</li>';
-                    return;
-                }
-                let recentHTML = '';
-                snapshot.forEach(doc => {
-                    const article = doc.data();
-                    recentHTML += `<li><a href="/article.html?slug=${article.slug}">${article.title}</a></li>`;
-                });
-                recentList.innerHTML = recentHTML;
-            })
-            .catch(error => {
-                console.error('Error loading recent articles:', error);
-                document.getElementById('recent-articles-list').innerHTML = '<li>Failed to load articles</li>';
-            });
-    }
-
-    function loadSiteSettings() {
-        Promise.all([
-            db.collection('settings').doc('footer').get(),
-            db.collection('settings').doc('general').get()
-        ]).then(([footerDoc, generalDoc]) => {
-            if (footerDoc.exists) {
-                const data = footerDoc.data();
-                if (data.footerText) document.getElementById('footer-text').textContent = data.footerText;
-                if (data.contactEmail) document.getElementById('contact-email').textContent = data.contactEmail;
-                if (data.contactAddress) document.getElementById('contact-address').textContent = data.contactAddress;
-            }
-            if (generalDoc.exists) {
-                const data = generalDoc.data();
-                const brand = document.querySelector('.navbar-brand');
-                if (brand) {
-                    if (data.siteLogo) {
-                        brand.innerHTML = `<img src="${data.siteLogo}" alt="${data.siteTitle || 'TrendingTech Daily'}" style="max-height: 40px;">`;
-                    } else if (data.siteTitle) {
-                        brand.textContent = data.siteTitle;
-                    }
-                }
-            }
-        }).catch(error => {
-            console.error('Error loading site settings:', error);
+            
+            articlesHTML += '</div>';
+            articlesContainer.innerHTML = articlesHTML;
+            console.log('Articles rendered successfully');
+        })
+        .catch(error => {
+            console.error('Error loading articles:', error);
+            articlesContainer.innerHTML = '<p class="text-center text-danger">Failed to load articles.</p>';
         });
-    }
+}
 
-    function showError(message) {
-        document.getElementById('category-title').textContent = 'Error';
-        document.getElementById('category-description').textContent = '';
-        document.getElementById('articles-container').innerHTML = `<div class="alert alert-danger"><h3>Oops!</h3><p>${message}</p><a href="/" class="btn btn-primary mt-3">Go to Homepage</a></div>`;
-    }
+// Show error message
+function showError(message) {
+    console.error('ERROR:', message);
+    const mainContent = document.querySelector('main') || document.querySelector('.container') || document.body;
+    mainContent.innerHTML = `
+        <div class="container mt-5">
+            <div class="alert alert-danger" role="alert">
+                <h4 class="alert-heading">Error</h4>
+                <p>${message}</p>
+                <hr>
+                <p class="mb-0"><a href="/" class="btn btn-primary">Go to Homepage</a></p>
+            </div>
+        </div>
+    `;
+}
 
+// Start initialization
+console.log('Category.js loaded, starting initialization...');
 
-    // --- SCRIPT EXECUTION STARTS HERE ---
-    
-    // Call the functions needed to build the category page
-    loadSections();
-    loadRecentArticles();
-    loadSiteSettings();
+// Get slug from sessionStorage or URL
+let categorySlug = null;
 
-    if (!categorySlug) {
-        showError('No category specified. Please check the URL and try again.');
+// Check sessionStorage first
+const routingInfo = sessionStorage.getItem('categoryRouting');
+if (routingInfo) {
+    categorySlug = routingInfo;
+    sessionStorage.removeItem('categoryRouting');
+    console.log('Found slug in sessionStorage:', categorySlug);
+} else {
+    // Check URL
+    const pathParts = window.location.pathname.split('/').filter(Boolean);
+    if (pathParts.length === 1 && !pathParts[0].includes('.html')) {
+        categorySlug = pathParts[0];
+        console.log('Found slug in URL path:', categorySlug);
     } else {
-        loadCategory(categorySlug);
+        // Check query params as fallback
+        const urlParams = new URLSearchParams(window.location.search);
+        categorySlug = urlParams.get('slug');
+        console.log('Found slug in query params:', categorySlug);
     }
-});
+}
+
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM loaded, initializing category page...');
+        if (categorySlug) {
+            loadCategory(categorySlug);
+        } else {
+            showError('No category specified in the URL.');
+        }
+    });
+} else {
+    // DOM already loaded
+    console.log('DOM already loaded, initializing category page...');
+    if (categorySlug) {
+        loadCategory(categorySlug);
+    } else {
+        showError('No category specified in the URL.');
+    }
+}

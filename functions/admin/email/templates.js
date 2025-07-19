@@ -1,7 +1,7 @@
 //templates.js
-const functions = require('firebase-functions');
-const admin = require('./admin'); // Import the initialized admin SDK
-const db = require('./db'); // Import the initialized Firestore instance
+const functions = require("firebase-functions");
+const admin = require("./admin"); // Import the initialized admin SDK
+const db = require("./db"); // Import the initialized Firestore instance
 
 // Create or update a template
 exports.saveTemplate = functions.https.onCall(async (data, context) => {
@@ -9,7 +9,7 @@ exports.saveTemplate = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
-      "You must be logged in to manage email templates."
+      "You must be logged in to manage email templates.",
     );
   }
   
@@ -25,9 +25,9 @@ exports.saveTemplate = functions.https.onCall(async (data, context) => {
       subject,
       htmlContent,
       textContent: textContent || stripHtml(htmlContent),
-      category: category || 'general',
+      category: category || "general",
       placeholders,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
     
     let templateId = id;
@@ -55,7 +55,7 @@ exports.getTemplates = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
-      "You must be logged in to access email templates."
+      "You must be logged in to access email templates.",
     );
   }
   
@@ -69,7 +69,7 @@ exports.getTemplates = functions.https.onCall(async (data, context) => {
     templatesSnapshot.forEach(doc => {
       templates.push({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       });
     });
     
@@ -86,7 +86,7 @@ exports.getTemplate = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
-      "You must be logged in to access email templates."
+      "You must be logged in to access email templates.",
     );
   }
   
@@ -105,7 +105,7 @@ exports.getTemplate = functions.https.onCall(async (data, context) => {
     
     return {
       id: templateDoc.id,
-      ...templateDoc.data()
+      ...templateDoc.data(),
     };
   } catch (error) {
     console.error("Error getting template:", error);
@@ -119,7 +119,7 @@ exports.deleteTemplate = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
-      "You must be logged in to manage email templates."
+      "You must be logged in to manage email templates.",
     );
   }
   
@@ -139,7 +139,7 @@ exports.deleteTemplate = functions.https.onCall(async (data, context) => {
     if (!campaignsSnapshot.empty) {
       throw new functions.https.HttpsError(
         "failed-precondition", 
-        "Template is in use by one or more campaigns and cannot be deleted"
+        "Template is in use by one or more campaigns and cannot be deleted",
       );
     }
     
@@ -151,7 +151,7 @@ exports.deleteTemplate = functions.https.onCall(async (data, context) => {
     if (!workflowsSnapshot.empty) {
       throw new functions.https.HttpsError(
         "failed-precondition", 
-        "Template is in use by one or more workflows and cannot be deleted"
+        "Template is in use by one or more workflows and cannot be deleted",
       );
     }
     
@@ -181,7 +181,7 @@ function extractPlaceholders(content) {
 // Simple HTML strip function for text content
 function stripHtml(html) {
   return html
-    .replace(/<[^>]*>/g, '')
-    .replace(/\s+/g, ' ')
+    .replace(/<[^>]*>/g, "")
+    .replace(/\s+/g, " ")
     .trim();
 }

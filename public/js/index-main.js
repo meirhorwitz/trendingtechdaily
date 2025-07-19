@@ -90,6 +90,14 @@ function loadFeaturedArticle() {
         if(container) container.innerHTML = '<p class="text-muted text-center">Loading dependency error.</p>';
         return;
     }
+
+    // Check if categoryCache is populated, if not wait a bit and retry
+    if (Object.keys(categoryCache).length === 0) {
+        console.log("Category cache not ready for featured article, retrying in 500ms...");
+        setTimeout(loadFeaturedArticle, 500);
+        return;
+    }
+
     db.collection('articles').where('published', '==', true).where('featured', '==', true)
         .orderBy('createdAt', 'desc').limit(1).get()
         .then(snap => {
@@ -109,6 +117,14 @@ function loadMostRecentArticleAsFeatured() {
         if(container) container.innerHTML = '<p class="text-muted text-center">Loading dependency error.</p>';
         return;
     }
+
+    // Check if categoryCache is populated, if not wait a bit and retry
+    if (Object.keys(categoryCache).length === 0) {
+        console.log("Category cache not ready for most recent article, retrying in 500ms...");
+        setTimeout(loadMostRecentArticleAsFeatured, 500);
+        return;
+    }
+
     db.collection('articles').where('published','==',true).orderBy('createdAt','desc').limit(1).get()
         .then(snap => {
             if (snap.empty) container.innerHTML = '<p class="text-center text-muted">No articles available.</p>';
@@ -127,6 +143,14 @@ function loadLatestArticles() {
         if(container) container.innerHTML = '<p class="text-muted text-center">Loading dependency error.</p>';
         return;
     }
+
+    // Check if categoryCache is populated, if not wait a bit and retry
+    if (Object.keys(categoryCache).length === 0) {
+        console.log("Category cache not ready, retrying in 500ms...");
+        setTimeout(loadLatestArticles, 500);
+        return;
+    }
+
     db.collection('articles').where('published','==',true).orderBy('createdAt','desc').limit(7).get()
         .then(snap => {
             if (snap.empty) {
@@ -166,7 +190,17 @@ function renderArticle(doc, container, isFeatured = false) {
     try {
         const article = { id: doc.id, ...doc.data() };
         const date = getSafe(() => new Date(article.createdAt.toDate()).toLocaleDateString(), 'N/A');
-        const categoryName = getSafe(() => categoryCache[article.category], 'Uncategorized');
+        
+        // Get category name from cache with better fallback handling
+        let categoryName = 'Uncategorized';
+        if (article.category && categoryCache[article.category]) {
+            if (typeof categoryCache[article.category] === 'object') {
+                categoryName = categoryCache[article.category].name || 'Uncategorized';
+            } else {
+                categoryName = categoryCache[article.category];
+            }
+        }
+        
         const articleUrl = article.slug ? `/article.html?slug=${article.slug}` : '#';
         const cardClass = isFeatured ? 'featured-article' : 'article-card';
         const titleTag = isFeatured ? 'h2' : 'h3';
@@ -201,7 +235,17 @@ function renderArticle(doc, container, isFeatured = false) {
 function renderArticleCard(article) {
     try {
         const date = getSafe(() => new Date(article.createdAt.toDate()).toLocaleDateString(), 'N/A');
-        const categoryName = categoryCache[article.category] || 'Uncategorized';
+        
+        // Get category name from cache with better fallback handling
+        let categoryName = 'Uncategorized';
+        if (article.category && categoryCache[article.category]) {
+            if (typeof categoryCache[article.category] === 'object') {
+                categoryName = categoryCache[article.category].name || 'Uncategorized';
+            } else {
+                categoryName = categoryCache[article.category];
+            }
+        }
+        
         const articleUrl = getSafe(() => article.slug) ? `/article.html?slug=${getSafe(() => article.slug)}` : '#';
         const title = getSafe(() => article.title, 'Untitled Article');
         const excerpt = getSafe(() => article.excerpt, '');

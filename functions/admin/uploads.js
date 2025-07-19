@@ -1,14 +1,14 @@
-const admin = require('firebase-admin');
-const { v4: uuidv4 } = require('uuid');
-const path = require('path');
-const os = require('os');
-const fs = require('fs');
-const Busboy = require('busboy');
+const admin = require("firebase-admin");
+const { v4: uuidv4 } = require("uuid");
+const path = require("path");
+const os = require("os");
+const fs = require("fs");
+const Busboy = require("busboy");
 
 // Handle file upload
 exports.uploadFile = async (req, res) => {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
   }
   
   const busboy = new Busboy({ headers: req.headers });
@@ -16,13 +16,13 @@ exports.uploadFile = async (req, res) => {
   const fields = {};
   const uploads = {};
   
-  busboy.on('field', (fieldname, val) => {
+  busboy.on("field", (fieldname, val) => {
     fields[fieldname] = val;
   });
   
   const fileWrites = [];
   
-  busboy.on('file', (fieldname, file, filename, encoding, mimetype) => {
+  busboy.on("file", (fieldname, file, filename, encoding, mimetype) => {
     if (!filename) {
       return;
     }
@@ -37,23 +37,23 @@ exports.uploadFile = async (req, res) => {
       filepath,
       mimetype,
       originalName,
-      uniqueFilename
+      uniqueFilename,
     };
     
     const writeStream = fs.createWriteStream(filepath);
     file.pipe(writeStream);
     
     const promise = new Promise((resolve, reject) => {
-      file.on('end', () => {
+      file.on("end", () => {
         writeStream.end();
       });
-      writeStream.on('finish', resolve);
-      writeStream.on('error', reject);
+      writeStream.on("finish", resolve);
+      writeStream.on("error", reject);
     });
     fileWrites.push(promise);
   });
   
-  busboy.on('finish', async () => {
+  busboy.on("finish", async () => {
     await Promise.all(fileWrites);
     
     const results = [];
@@ -68,23 +68,23 @@ exports.uploadFile = async (req, res) => {
         metadata: {
           contentType: upload.mimetype,
           metadata: {
-            originalName: upload.originalName
-          }
-        }
+            originalName: upload.originalName,
+          },
+        },
       });
       
       // Get the public URL
       const file = bucket.file(destination);
       const [url] = await file.getSignedUrl({
-        action: 'read',
-        expires: '01-01-2100'
+        action: "read",
+        expires: "01-01-2100",
       });
       
       results.push({
         fieldname: name,
         originalName: upload.originalName,
         filename: upload.uniqueFilename,
-        url
+        url,
       });
       
       fs.unlinkSync(upload.filepath);

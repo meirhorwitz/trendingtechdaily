@@ -75,38 +75,58 @@
         </div>
     </main>
     
-    <footer class="footer">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-4">
-                    <h5>TrendingTech Daily</h5>
-                    <p>Stay informed with the latest technology news, trends, and insights from around the world.</p>
-                </div>
-                <div class="col-md-4">
-                    <h5>Quick Links</h5>
-                    <ul class="footer-links">
-                        <li><a href="/">Home</a></li>
-                        <div id="footer-links"></div>
-                    </ul>
-                </div>
-                <div class="col-md-4">
-                    <h5>Contact Us</h5>
-                    <p>
-                        <i class="bi bi-envelope-fill me-2"></i> <span id="contact-email">info@trendingtechdaily.com</span><br>
-                        <i class="bi bi-geo-alt-fill me-2"></i> <span id="contact-address">Tech Hub, Digital Avenue</span>
-                    </p>
-                </div>
-            </div>
-            
-            <div class="copyright">
-                <p>&copy; <span id="footer-text">2025 TrendingTech Daily. All rights reserved.</span></p>
-            </div>
-        </div>
-    </footer>
+    <!-- Footer Placeholder -->
+    <div id="footer-placeholder"></div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="js/app-base.js"></script> 
-    <script src="/js/category-helper.js"></script>    <script src="js/category.js"></script>
+    <script src="js/app-base.js?v=2"></script>
+    <script src="/js/category-helper.js"></script>
+    <script src="js/category.js?v=6"></script>
+    <script src="/js/nav-loader.js"></script>
+    <script>
+    // Force category loading after all scripts are loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        // Wait a bit for all other scripts to initialize
+        setTimeout(function() {
+            console.log('Force loading category from inline script');
+            
+            // Get the slug from URL or sessionStorage
+            let categorySlug = null;
+            
+            // Check sessionStorage first
+            const routingInfo = sessionStorage.getItem('categoryRouting');
+            if (routingInfo) {
+                categorySlug = routingInfo;
+                sessionStorage.removeItem('categoryRouting');
+                console.log('Found slug in sessionStorage:', categorySlug);
+            } else {
+                // Check URL
+                const pathParts = window.location.pathname.split('/').filter(part => part && part !== '');
+                if (pathParts.length === 1 && !pathParts[0].includes('.html')) {
+                    categorySlug = pathParts[0];
+                    console.log('Found slug in URL:', categorySlug);
+                } else {
+                    // Check query params
+                    const urlParams = new URLSearchParams(window.location.search);
+                    categorySlug = urlParams.get('slug');
+                    console.log('Found slug in query params:', categorySlug);
+                }
+            }
+            
+            if (categorySlug && typeof loadCategory === 'function') {
+                console.log('Calling loadCategory with slug:', categorySlug);
+                loadCategory(categorySlug);
+                
+                // Also load sections if not already loaded
+                if (typeof loadSections === 'function') {
+                    loadSections();
+                }
+            } else {
+                console.error('No category slug found or loadCategory function not available');
+            }
+        }, 500); // Wait 500ms for everything to initialize
+    });
+    </script>
 
 </body>
 </html>

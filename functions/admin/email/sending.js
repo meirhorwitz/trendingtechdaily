@@ -1,13 +1,13 @@
 //sending.js
-const functions = require('firebase-functions');
-const admin = require('./admin'); // Import the initialized admin SDK
-const db = require('./db'); // Import the initialized Firestore instance
-const { google } = require('googleapis');
+const functions = require("firebase-functions");
+const admin = require("./admin"); // Import the initialized admin SDK
+const db = require("./db"); // Import the initialized Firestore instance
+const { google } = require("googleapis");
 
 // IMPORTANT: If you set up Domain-Wide Delegation, specify the user to impersonate here.
 // This email address MUST be a user in your Google Workspace domain.
 // Otherwise, emails will be sent from the service account's email address.
-const USER_TO_IMPERSONATE = 'info@trendingtechdaily.com'; // Or your desired "From" user in your Workspace
+const USER_TO_IMPERSONATE = "info@trendingtechdaily.com"; // Or your desired "From" user in your Workspace
 // If not using impersonation (e.g., sending from the service account itself), set to null or remove related auth logic.
 // const USER_TO_IMPERSONATE = null;
 
@@ -45,7 +45,7 @@ exports.processEmailQueue = functions.https.onRequest(async (req, res) => {
     res.status(200).send("Email processing complete");
   } catch (error) {
     console.error("processEmailQueue: Critical error in queue processing:", error.message, error.stack);
-    res.status(500).send("Error processing email queue: " + error.message + (error.stack ? ` Stack: ${error.stack}` : ''));
+    res.status(500).send("Error processing email queue: " + error.message + (error.stack ? ` Stack: ${error.stack}` : ""));
   }
 });
 
@@ -56,7 +56,7 @@ async function processEmailTask(task, taskRef) {
     console.log(`processEmailTask: Starting task ${taskRef.id}. Data:`, JSON.stringify(task).substring(0,300));
     await taskRef.update({
       status: "processing",
-      processingStarted: admin.firestore.FieldValue.serverTimestamp()
+      processingStarted: admin.firestore.FieldValue.serverTimestamp(),
     });
     
     // Get tracking info
@@ -77,7 +77,7 @@ async function processEmailTask(task, taskRef) {
     if (trackingDoc && trackingDoc.exists) { // Check if trackingDoc is not null and exists
       await trackingDoc.ref.update({
         sentAt: admin.firestore.FieldValue.serverTimestamp(),
-        status: "delivered"
+        status: "delivered",
       });
       
       // Update campaign stats if applicable
@@ -85,7 +85,7 @@ async function processEmailTask(task, taskRef) {
       
       if (trackingData.campaignId) {
         await db.collection("campaigns").doc(trackingData.campaignId).update({
-          "stats.delivered": admin.firestore.FieldValue.increment(1)
+          "stats.delivered": admin.firestore.FieldValue.increment(1),
         });
       }
       
@@ -93,7 +93,7 @@ async function processEmailTask(task, taskRef) {
       if (trackingData.subscriberId) {
         await db.collection("subscribers").doc(trackingData.subscriberId).update({
           emailsSent: admin.firestore.FieldValue.increment(1),
-          lastEmailSent: admin.firestore.FieldValue.serverTimestamp()
+          lastEmailSent: admin.firestore.FieldValue.serverTimestamp(),
         });
       }
     }
@@ -101,18 +101,18 @@ async function processEmailTask(task, taskRef) {
     // Mark task as complete
     await taskRef.update({
       status: "completed",
-      completedAt: admin.firestore.FieldValue.serverTimestamp()
+      completedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
     
-    console.log(`processEmailTask: Email sent successfully for task ${taskRef.id}. Tracking ID: ${task.trackingId || 'N/A'}`);
-} catch (error) {
+    console.log(`processEmailTask: Email sent successfully for task ${taskRef.id}. Tracking ID: ${task.trackingId || "N/A"}`);
+  } catch (error) {
     console.error(`processEmailTask: Error processing task ${taskRef.id}:`, error.message, error.stack);
     
     // Mark task as failed
     await taskRef.update({
       status: "error",
       error: error.message,
-      errorAt: admin.firestore.FieldValue.serverTimestamp()
+      errorAt: admin.firestore.FieldValue.serverTimestamp(),
     });
     
     // Update tracking status if available
@@ -144,19 +144,19 @@ function createRawEmailMessage({ to, from, subject, htmlBody, cc, bcc, replyTo }
     if (replyTo) emailLines.push(`Reply-To: ${replyTo}`);
     
     // Set MIME headers
-    emailLines.push('MIME-Version: 1.0');
-    emailLines.push('Content-Type: text/html; charset=utf-8');
-    emailLines.push(''); // Empty line separates headers from body
+    emailLines.push("MIME-Version: 1.0");
+    emailLines.push("Content-Type: text/html; charset=utf-8");
+    emailLines.push(""); // Empty line separates headers from body
     emailLines.push(htmlBody);
 
     // Combine into a single string with proper line endings
-    const email = emailLines.join('\r\n');
+    const email = emailLines.join("\r\n");
     
     // Base64url encode the email
-    return Buffer.from(email).toString('base64')
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '');
+    return Buffer.from(email).toString("base64")
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");
   } catch (error) {
     console.error("Error creating raw email message:", error);
     throw error;
@@ -180,30 +180,30 @@ async function sendEmailViaGmailAPI(emailData) {
       from: emailData.from || `TrendingTechDaily <${USER_TO_IMPERSONATE}>`,
       cc: emailData.cc,
       bcc: emailData.bcc,
-      replyTo: emailData.replyTo
+      replyTo: emailData.replyTo,
     };
     
     console.log("sendEmailViaGmailAPI: Mail options prepared");
 
     // Create auth with explicit client ID from your service account
     const auth = new google.auth.GoogleAuth({
-      scopes: ['https://www.googleapis.com/auth/gmail.send'],
+      scopes: ["https://www.googleapis.com/auth/gmail.send"],
       clientOptions: {
-        subject: USER_TO_IMPERSONATE // This is the critical part for domain-wide delegation
-      }
+        subject: USER_TO_IMPERSONATE, // This is the critical part for domain-wide delegation
+      },
     });
     
     const authClient = await auth.getClient();
     console.log("sendEmailViaGmailAPI: Auth client created");
 
-    const gmail = google.gmail({ version: 'v1', auth: authClient });
+    const gmail = google.gmail({ version: "v1", auth: authClient });
     
     // Create raw email message (RFC 2822 format)
     const rawMessage = createRawEmailMessage(mailOptions);
     console.log("sendEmailViaGmailAPI: Raw message created");
 
     const params = {
-      userId: 'me', // When using domain-wide delegation with subject, 'me' refers to the impersonated user
+      userId: "me", // When using domain-wide delegation with subject, 'me' refers to the impersonated user
       requestBody: {
         raw: rawMessage,
       },
@@ -211,7 +211,7 @@ async function sendEmailViaGmailAPI(emailData) {
 
     console.log("sendEmailViaGmailAPI: Sending email via Gmail API...");
     const res = await gmail.users.messages.send(params);
-    console.log('sendEmailViaGmailAPI: Gmail API send response status:', res.status);
+    console.log("sendEmailViaGmailAPI: Gmail API send response status:", res.status);
     return res.data;
 
   } catch (error) {
@@ -239,7 +239,7 @@ exports.sendTransactionalEmail = functions.https.onCall(async (data, context) =>
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
-      "You must be logged in to send emails."
+      "You must be logged in to send emails.",
     );
   }
   
@@ -250,7 +250,7 @@ exports.sendTransactionalEmail = functions.https.onCall(async (data, context) =>
     if (!to || !subject) {
       throw new functions.https.HttpsError(
         "invalid-argument",
-        "Missing required email fields"
+        "Missing required email fields",
       );
     }
     
@@ -269,7 +269,7 @@ exports.sendTransactionalEmail = functions.https.onCall(async (data, context) =>
       
       // Replace placeholders
       for (const [key, value] of Object.entries(emailData || {})) {
-        const regex = new RegExp(`{{${key}}}`, 'g');
+        const regex = new RegExp(`{{${key}}}`, "g");
         htmlContent = htmlContent.replace(regex, value);
       }
     } else if (data.html) {
@@ -277,7 +277,7 @@ exports.sendTransactionalEmail = functions.https.onCall(async (data, context) =>
     } else {
       throw new functions.https.HttpsError(
         "invalid-argument",
-        "Either templateId or html must be provided"
+        "Either templateId or html must be provided",
       );
     }
     
@@ -292,7 +292,7 @@ exports.sendTransactionalEmail = functions.https.onCall(async (data, context) =>
       cc: data.cc,
       bcc: data.bcc,
       status: "pending",
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
     
     return { success: true };
@@ -335,7 +335,7 @@ exports.processEmailFeedback = functions.https.onRequest(async (req, res) => {
       await db.collection("subscribers").doc(subscriberId).update({
         status: "bounced",
         bounceReason: reason || "Hard bounce",
-        bounceDate: admin.firestore.FieldValue.serverTimestamp()
+        bounceDate: admin.firestore.FieldValue.serverTimestamp(),
       });
       
       // Find tracking entry if messageId is provided
@@ -351,7 +351,7 @@ exports.processEmailFeedback = functions.https.onRequest(async (req, res) => {
           await db.collection("tracking").doc(trackingId).update({
             status: "bounced",
             bounceReason: reason || "Hard bounce",
-            bounceDate: admin.firestore.FieldValue.serverTimestamp()
+            bounceDate: admin.firestore.FieldValue.serverTimestamp(),
           });
           
           // Update campaign stats if applicable
@@ -359,7 +359,7 @@ exports.processEmailFeedback = functions.https.onRequest(async (req, res) => {
           
           if (trackingData.campaignId) {
             await db.collection("campaigns").doc(trackingData.campaignId).update({
-              "stats.bounced": admin.firestore.FieldValue.increment(1)
+              "stats.bounced": admin.firestore.FieldValue.increment(1),
             });
           }
         }
@@ -369,7 +369,7 @@ exports.processEmailFeedback = functions.https.onRequest(async (req, res) => {
       await db.collection("subscribers").doc(subscriberId).update({
         status: "unsubscribed",
         unsubscribeReason: "Spam complaint",
-        unsubscribeDate: admin.firestore.FieldValue.serverTimestamp()
+        unsubscribeDate: admin.firestore.FieldValue.serverTimestamp(),
       });
       
       // Find tracking entry if messageId is provided
@@ -384,7 +384,7 @@ exports.processEmailFeedback = functions.https.onRequest(async (req, res) => {
           
           await db.collection("tracking").doc(trackingId).update({
             status: "complaint",
-            complaintDate: admin.firestore.FieldValue.serverTimestamp()
+            complaintDate: admin.firestore.FieldValue.serverTimestamp(),
           });
           
           // Update campaign stats if applicable
@@ -392,7 +392,7 @@ exports.processEmailFeedback = functions.https.onRequest(async (req, res) => {
           
           if (trackingData.campaignId) {
             await db.collection("campaigns").doc(trackingData.campaignId).update({
-              "stats.complaints": admin.firestore.FieldValue.increment(1)
+              "stats.complaints": admin.firestore.FieldValue.increment(1),
             });
           }
         }
@@ -433,7 +433,7 @@ exports.handleUnsubscribe = functions.https.onRequest(async (req, res) => {
     // Update subscriber status
     await db.collection("subscribers").doc(subscriberId).update({
       status: "unsubscribed",
-      unsubscribeDate: admin.firestore.FieldValue.serverTimestamp()
+      unsubscribeDate: admin.firestore.FieldValue.serverTimestamp(),
     });
     
     // Update tracking if trackingId is provided
@@ -442,7 +442,7 @@ exports.handleUnsubscribe = functions.https.onRequest(async (req, res) => {
       
       if (trackingDoc.exists) {
         await trackingDoc.ref.update({
-          unsubscribedAt: admin.firestore.FieldValue.serverTimestamp()
+          unsubscribedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
         
         // Update campaign stats if applicable
@@ -450,7 +450,7 @@ exports.handleUnsubscribe = functions.https.onRequest(async (req, res) => {
         
         if (trackingData.campaignId) {
           await db.collection("campaigns").doc(trackingData.campaignId).update({
-            "stats.unsubscribed": admin.firestore.FieldValue.increment(1)
+            "stats.unsubscribed": admin.firestore.FieldValue.increment(1),
           });
         }
       }

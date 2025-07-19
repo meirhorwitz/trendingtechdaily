@@ -1,10 +1,10 @@
 
 // const functions = require('firebase-functions'); // No longer needed for v2 scheduler
-const fetch = require('node-fetch'); // Ensure node-fetch@2 is in your package.json
+const fetch = require("node-fetch"); // Ensure node-fetch@2 is in your package.json
 const { onSchedule } = require("firebase-functions/v2/scheduler"); // Import v2 scheduler
 
 // Ensure these environment variables are set by Firebase or configure them.
-const REGION = process.env.FUNCTION_REGION || 'us-central1'; // Default if not set
+const REGION = process.env.FUNCTION_REGION || "us-central1"; // Default if not set
 const PROJECT_ID = process.env.GCLOUD_PROJECT;
 
 /**
@@ -29,9 +29,9 @@ async function callHttpFunction(functionName, callerName) {
     console.log(`[${callerName}] Triggering ${functionName} at ${functionUrl}`);
     // Using POST as a general method, GET would also work if the target function doesn't expect a body.
     const response = await fetch(functionUrl, {
-        method: 'POST', // Your processCampaignSend and processEmailQueue are onRequest, POST is fine.
-        headers: { 'Content-Type': 'application/json' },
-        // body: JSON.stringify({}) // Send an empty JSON body if needed
+      method: "POST", // Your processCampaignSend and processEmailQueue are onRequest, POST is fine.
+      headers: { "Content-Type": "application/json" },
+      // body: JSON.stringify({}) // Send an empty JSON body if needed
     });
 
     if (!response.ok) {
@@ -51,10 +51,10 @@ async function callHttpFunction(functionName, callerName) {
  * Runs every minute.
  */
 exports.triggerProcessCampaignSend = onSchedule({
-  schedule: 'every 1 minutes', // Schedule string (Cloud Scheduler format)
+  schedule: "every 1 minutes", // Schedule string (Cloud Scheduler format)
   region: REGION,
 }, async (context) => {
-  await callHttpFunction('processCampaignSend', 'triggerProcessCampaignSend');
+  await callHttpFunction("processCampaignSend", "triggerProcessCampaignSend");
   return null;
 });
 
@@ -63,9 +63,9 @@ exports.triggerProcessCampaignSend = onSchedule({
  * Runs every 1 minutes. (Adjust frequency as needed in the schedule string)
  */
 exports.triggerProcessEmailQueue = onSchedule({
-  schedule: 'every 1 minutes', // Schedule string (Cloud Scheduler format)
+  schedule: "every 1 minutes", // Schedule string (Cloud Scheduler format)
   region: REGION,
 }, async (context) => {
-  await callHttpFunction('processEmailQueue', 'triggerProcessEmailQueue');
+  await callHttpFunction("processEmailQueue", "triggerProcessEmailQueue");
   return null;
 });

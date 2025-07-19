@@ -21,8 +21,8 @@ function ensureReadingTime(article) {
     }
     return article;
 }
-// PASTE THIS FUNCTION AT THE TOP OF public/js/index-main.js
 
+// PASTE THIS FUNCTION AT THE TOP OF public/js/index-main.js
 function initWelcomePopup() {
     const popupOverlay = document.getElementById('welcome-popup-overlay');
     const closeBtn = document.getElementById('popup-close-btn');
@@ -81,8 +81,6 @@ function initWelcomePopup() {
 }
 
 // --- Functions specific to index.html rendering ---
-// ... (the rest of your existing code)
-// --- Functions specific to index.html rendering ---
 function loadFeaturedArticle() {
     const container = document.getElementById('featured-article-container');
     if (!container || typeof db === 'undefined') {
@@ -136,7 +134,16 @@ function loadLatestArticles() {
             let featuredSlug = null;
             const featuredLink = document.querySelector('#featured-article-container .article-title a');
             if (featuredLink?.href) {
-                try { featuredSlug = new URLSearchParams(new URL(featuredLink.href).search).get('slug'); } 
+                try { 
+                    // Updated to handle new URL structure
+                    const url = new URL(featuredLink.href);
+                    const pathSegments = url.pathname.split('/').filter(Boolean);
+                    if (pathSegments.length >= 2) {
+                        featuredSlug = pathSegments[1]; // Get article slug from new URL
+                    } else {
+                        featuredSlug = new URLSearchParams(url.search).get('slug'); // Fallback to old structure
+                    }
+                } 
                 catch(e) { console.warn("Could not parse featured slug"); }
             }
 
@@ -160,14 +167,30 @@ function loadLatestArticles() {
         });
 }
 
-// Renders a single Firestore article (Used by Featured)
+// Updated renderArticle function for index-main.js
+// Updated renderArticle function for index-main.js
 function renderArticle(doc, container, isFeatured = false) {
     if (!doc || !container) return;
     try {
         const article = { id: doc.id, ...doc.data() };
         const date = getSafe(() => new Date(article.createdAt.toDate()).toLocaleDateString(), 'N/A');
-        const categoryName = getSafe(() => categoryCache[article.category], 'Uncategorized');
-        const articleUrl = article.slug ? `/article.html?slug=${article.slug}` : '#';
+        const categoryName = getSafe(() => categoryCache[article.category]?.name || categoryCache[article.category], 'Uncategorized');
+        
+        // Get category slug - need to fetch from sections collection
+        let categorySlug = 'uncategorized';
+        if (article.category) {
+            // Check if we have the slug in cache (if categoryCache stores objects with slug)
+            if (categoryCache[article.category]?.slug) {
+                categorySlug = categoryCache[article.category].slug;
+            } else {
+                // Otherwise, create a slug from category ID
+                categorySlug = article.category.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+            }
+        }
+        
+        // Use new URL structure
+        const articleUrl = article.slug ? `/${categorySlug}/${article.slug}` : '#';
+        
         const cardClass = isFeatured ? 'featured-article' : 'article-card';
         const titleTag = isFeatured ? 'h2' : 'h3';
         const title = getSafe(() => article.title, 'Untitled Article');
@@ -197,12 +220,29 @@ function renderArticle(doc, container, isFeatured = false) {
     }
 }
 
-// Renders an article card HTML string
+// Updated renderArticleCard function
 function renderArticleCard(article) {
     try {
         const date = getSafe(() => new Date(article.createdAt.toDate()).toLocaleDateString(), 'N/A');
         const categoryName = categoryCache[article.category] || 'Uncategorized';
-        const articleUrl = getSafe(() => article.slug) ? `/article.html?slug=${getSafe(() => article.slug)}` : '#';
+        
+        // Get category slug
+        let categorySlug = 'uncategorized';
+        if (article.category) {
+            // Check if we have the slug in cache
+            if (categoryCache[article.category]?.slug) {
+                categorySlug = categoryCache[article.category].slug;
+            } else {
+                // Otherwise, create a slug from category ID
+                categorySlug = article.category.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+            }
+        }
+        
+        const articleSlug = getSafe(() => article.slug, '');
+        
+        // Use new URL structure
+        const articleUrl = articleSlug ? `/${categorySlug}/${articleSlug}` : '#';
+        
         const title = getSafe(() => article.title, 'Untitled Article');
         const excerpt = getSafe(() => article.excerpt, '');
         const featuredImage = getSafe(() => article.featuredImage);
@@ -212,26 +252,27 @@ function renderArticleCard(article) {
         return `
         <div class="article-card ${!featuredImage ? 'no-image' : ''}" data-id="${article.id}">
             <div class="article-image-container ${!featuredImage ? 'no-image' : ''}">
-            ${featuredImage ? `<div class="category-badge" data-category="${categoryName}">${categoryName}</div><a href="${articleUrl}"><img src="${featuredImage}" alt="${title}" class="article-image" loading="lazy" onerror="this.style.display='none'; this.parentElement.insertAdjacentHTML('beforeend', '<div class=\\'article-placeholder\\'>Image Error</div>');"></a>` : `<div class="article-placeholder">No Image Available</div>`}
+            ${featuredImage ? 
+                `<div class="category-badge" data-category="${categoryName}">${categoryName}</div>
+                <a href="${articleUrl}">
+                    <img src="${featuredImage}" alt="${title}" class="article-image" loading="lazy" 
+                         onerror="this.style.display='none'; this.parentElement.insertAdjacentHTML('beforeend', '<div class=\\'article-placeholder\\'>No Image</div>');">
+                </a>` : 
+                `<div class="article-placeholder">No Image Available</div>`}
             </div>
             <div class="article-content">
-            <h3 class="article-title"><a href="${articleUrl}">${title}</a></h3>
-            <p class="article-description">${excerpt || 'No description.'}</p>
-            <div class="article-meta">
-                <span class="text-muted small">${date}</span>
-                ${ readingTime ? 
-                   `<span class="ms-auto text-muted small">
-                      <i class="bi bi-clock-history me-1"></i>
-                      ${readingTime} min read
-                    </span>`
-                   : ''
-                }
-            </div>
+                <h3 class="article-title"><a href="${articleUrl}">${title}</a></h3>
+                <p class="article-description">${excerpt || 'Click to read more.'}</p>
+                <div class="article-meta">
+                    <span>${date}</span>
+                    ${author ? `<span>By ${author}</span>` : ''}
+                    ${readingTime ? `<span class="ms-auto text-muted small"><i class="bi bi-clock-history me-1"></i>${readingTime} min read</span>` : ''}
+                </div>
             </div>
         </div>`;
-    } catch(e) {
-        console.error("Error rendering article card:", e, article);
-        return '<div class="text-danger p-3 border">Error displaying article card.</div>';
+    } catch(e) { 
+        console.error("Error rendering article card:", e); 
+        return ''; 
     }
 }
 

@@ -1,12 +1,12 @@
 // functions/utils.js
 
-const { logger } = require('./config');
+const { logger } = require("./config");
 let GoogleGenerativeAI, HarmCategory, HarmBlockThreshold;
 
 /**
  * Safely gets a value from a function, returning a default if it throws an error.
  */
-function getSafe(fn, defaultValue = '') {
+function getSafe(fn, defaultValue = "") {
   try {
     const value = fn();
     return (value !== null && value !== undefined) ? value : defaultValue;
@@ -73,5 +73,5 @@ module.exports = {
   loadGeminiSDK,
   getSafetySettings,
   getStockMappingCacheDuration,
-  getGeminiSDK: () => ({ GoogleGenerativeAI, HarmCategory, HarmBlockThreshold })
+  getGeminiSDK: () => ({ GoogleGenerativeAI, HarmCategory, HarmBlockThreshold }),
 };

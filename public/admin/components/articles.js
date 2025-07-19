@@ -192,22 +192,21 @@ if (typeof window.articlesManagerInitialized === 'undefined') {
                                 /${sectionSlug}/${slug}
                                 <i class="bi bi-box-arrow-up-right small"></i>
                             </a>
-                            <button class="btn btn-sm btn-outline-secondary copy-url-btn ms-1 py-0 px-1" data-url="${fullArticleUrl}" title="Copy full URL">
+                            <button class="btn btn-sm btn-outline-secondary copy-url-btn ms-1 py-0 px-1" data-url="${fullArticleUrl}">
                                 <i class="bi bi-clipboard"></i>
                             </button>
                         </td>
                         <td>
-                            <div class="btn-group btn-group-sm">
-                                <button class="btn btn-outline-primary edit-article-btn" data-id="${article.id}" title="Edit Article">
-                                    <i class="bi bi-pencil-fill"></i>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button class="btn btn-outline-primary edit-article-btn" data-id="${article.id}" title="Edit">
+                                    <i class="bi bi-pencil"></i>
                                 </button>
-                                <button class="btn btn-outline-danger delete-article-btn" data-id="${article.id}" title="Delete Article">
-                                    <i class="bi bi-trash-fill"></i>
+                                <button class="btn btn-outline-danger delete-article-btn" data-id="${article.id}" title="Delete">
+                                    <i class="bi bi-trash"></i>
                                 </button>
                             </div>
                         </td>
-                    </tr>
-                `;
+                    </tr>`;
             });
             tableBody.innerHTML = articlesHTML;
             addArticleActionListeners();
@@ -615,7 +614,7 @@ if (typeof window.articlesManagerInitialized === 'undefined') {
                     } else { throw new Error(data.message || 'No topic suggested.'); }
                 } catch (error) {
                     console.error("Error suggesting topic:", error);
-                    setAIFeedback(`Topic Suggestion Error: ${error.message}`, 'danger');
+                    setAIFeedback('Sorry, topic suggestion failed. Please try again later.', 'danger');
                 } finally {
                     setButtonLoading('ai-suggest-topic-btn', false);
                 }
@@ -713,7 +712,7 @@ if (typeof window.articlesManagerInitialized === 'undefined') {
 
                 } catch (error) {
                     console.error("Error during full article generation:", error);
-                    setAIFeedback(`Full Draft Error: ${error.message}`, 'danger');
+                    setAIFeedback(`Full Draft Error: ${error.message || 'An unexpected error occurred.'}`, 'danger');
                 } finally {
                     setButtonLoading('ai-generate-full-btn', false);
                 }
@@ -812,7 +811,7 @@ if (typeof window.articlesManagerInitialized === 'undefined') {
                 }
             } catch (error) {
                 console.error("Error generating image prompt/alt text:", error);
-                setAIFeedback(`Suggest Prompt Error: ${error.message}`, 'danger');
+                setAIFeedback(`Suggest Prompt Error: ${error.message || 'An unexpected error occurred.'}`, 'danger');
                 if (imgPromptOutputDiv) {
                     imgPromptOutputDiv.textContent = 'Error loading suggestion.';
                     imgPromptOutputDiv.style.display = 'block';
@@ -869,8 +868,8 @@ if (typeof window.articlesManagerInitialized === 'undefined') {
                     throw new Error(imageData.message || 'Failed to get image or no image URL returned.');
                 }
             } catch (error) {
+                setAIFeedback('Sorry, image generation failed. Please try again later.', 'danger');
                 console.error("Error getting article image:", error);
-                setAIFeedback(`Get Image Error: ${error.message}`, 'danger');
             } finally {
                 setButtonLoading('ai-generate-image-btn', false);
             }

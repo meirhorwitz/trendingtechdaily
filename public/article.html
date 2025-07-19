@@ -26,6 +26,12 @@
     <link rel="stylesheet" href="/styles.css">
     <link rel="stylesheet" href="/css/ai-agent.css">
     
+    <!-- Article Code Snippet Styles -->
+    <link rel="stylesheet" href="/css/article-code.css">
+    
+    <!-- Prism.js for code highlighting -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    
     <!-- AdSense -->
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8142734137865758" crossorigin="anonymous"></script>
 </head>
@@ -97,48 +103,21 @@
     </div>
 
     <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-3 mb-4 mb-md-0">
-                    <h5 id="footer-site-title">TrendingTech Daily</h5>
-                    <p id="footer-description" class="small text-muted">Stay informed...</p>
-                </div>
-                <div class="col-md-3 mb-4 mb-md-0">
-                    <h5>Quick Links</h5>
-                    <ul class="footer-links">
-                        <li><a href="/">Home</a></li>
-                        <li><a href="/about.html">About Us</a></li>
-                        <li><a href="/privacy.html">Privacy Policy</a></li>
-                        <li><a href="/terms.html">Terms of Service</a></li>
-                    </ul>
-                </div>
-                <div class="col-md-3 mb-4 mb-md-0">
-                    <h5>Categories</h5>
-                    <ul class="footer-links" id="footer-categories-list">
-                        <li class="text-muted small fst-italic">Loading...</li>
-                    </ul>
-                </div>
-                <div class="col-md-3">
-                    <h5>Contact Us</h5>
-                    <p class="small">
-                        <i class="bi bi-envelope-fill me-1"></i><span id="contact-email">loading...</span><br>
-                        <i class="bi bi-geo-alt-fill me-1"></i><span id="contact-address">loading...</span>
-                    </p>
-                    <div id="footer-social-links" class="mt-2"></div>
-                </div>
-            </div>
-            <div class="copyright">&copy; <span id="footer-text">2025 TrendingTech Daily. All rights reserved.</span></div>
-        </div>
-    </footer>
+    <div id="footer-placeholder"></div>
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="/js/app-base.js"></script>
-    <script src="/js/category-helper.js"></script>    <script src="/js/ai-agent.js" defer></script>
+    <script src="js/app-base.js?v=2"></script>
+    <script src="/js/category-helper.js"></script> 
+    <script src="/js/ai-agent.js" defer></script>
+    
+    <!-- Prism.js for code highlighting (must be before article-page.js) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
 
     <!-- Page-specific Scripts -->
     <script src="/js/article-page.js"></script>
+    <script src="/js/nav-loader.js"></script>
 
     <!-- AI Agent Container -->
     <div class="ai-agent-container" id="aiAgentContainer">

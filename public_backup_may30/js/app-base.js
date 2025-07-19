@@ -1,4 +1,4 @@
-// public/js/app-base.js (Corrected Version)
+// public/js/app-base.js (Corrected Version with New URL Structure)
 console.log("app-base.js loading...");
 
 // --- Firebase Configuration ---
@@ -40,7 +40,6 @@ function getSafe(fn, defaultValue = '') {
 
 // --- Global Cache ---
 const categoryCache = {};
-
 
 // --- Attach all event listeners and loaders after the DOM is ready ---
 document.addEventListener('DOMContentLoaded', function() {
@@ -103,7 +102,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // --- Auth State Management ---
-// ... (This function remains unchanged) ...
 function setupAuthListener() {
     auth.onAuthStateChanged(user => {
         console.log("Auth state changed:", user ? `User UID: ${user.uid}` : "No user logged in");
@@ -136,15 +134,12 @@ function setupAuthListener() {
     });
 }
 
-
 // =================================================================
-//  *** NEW FUNCTION: LOAD LATEST ARTICLES ***
-//  This function fetches articles from your internal Firestore collection
-//  and uses the `categoryCache` to display the correct badge.
+//  *** UPDATED FUNCTION: LOAD LATEST ARTICLES WITH NEW URL STRUCTURE ***
 // =================================================================
 function loadLatestArticles() {
     const container = document.getElementById('latest-articles-container');
-    // Exit if the container isn't on the current page (e.g., you're on a category page)
+    // Exit if the container isn't on the current page
     if (!container) {
         return; 
     }
@@ -152,9 +147,9 @@ function loadLatestArticles() {
     container.innerHTML = `<div class="spinner-container"><div class="spinner-border" role="status"></div><p>Loading Latest Articles...</p></div>`;
 
     db.collection('articles')
-      .where('status', '==', 'published')
-      .orderBy('published_at', 'desc')
-      .limit(6) // Adjust the number of articles as needed
+      .where('published', '==', true)
+      .orderBy('createdAt', 'desc')
+      .limit(6)
       .get()
       .then(snapshot => {
           if (snapshot.empty) {
@@ -162,18 +157,27 @@ function loadLatestArticles() {
               return;
           }
 
-          let articlesHtml = '<div class="article-grid">'; // Use a consistent grid layout
+          let articlesHtml = '<div class="article-grid">';
           snapshot.forEach(doc => {
               const article = { id: doc.id, ...doc.data() };
               const title = getSafe(() => article.title, 'Untitled Article');
-              const url = `/article.html?id=${article.id}`;
-              const imageUrl = getSafe(() => article.imageUrl);
-              const publishedDate = getSafe(() => new Date(article.published_at.toDate()).toLocaleDateString(), 'N/A');
               
-              // --- THIS IS THE CORE FIX ---
-              // Use the article's categoryId to look up the name in the cache
-              const categoryId = getSafe(() => article.categoryId);
-              const categoryName = categoryCache[categoryId] || 'Uncategorized'; // Fallback just in case
+              // Get category info from cache
+              const categoryId = getSafe(() => article.category);
+              const categoryInfo = categoryCache[categoryId] || { name: 'Uncategorized', slug: 'uncategorized' };
+              const categoryName = typeof categoryInfo === 'string' ? categoryInfo : categoryInfo.name;
+              const categorySlug = typeof categoryInfo === 'object' ? categoryInfo.slug : categoryId?.toLowerCase() || 'uncategorized';
+              
+              // Use new URL structure
+              const url = article.slug ? `/${categorySlug}/${article.slug}` : '#';
+              
+              const imageUrl = getSafe(() => article.featuredImage);
+              const publishedDate = getSafe(() => {
+                  if (article.createdAt && article.createdAt.toDate) {
+                      return new Date(article.createdAt.toDate()).toLocaleDateString();
+                  }
+                  return 'N/A';
+              });
 
               articlesHtml += `
                 <div class="article-card ${!imageUrl ? 'no-image' : ''}">
@@ -197,13 +201,7 @@ function loadLatestArticles() {
       });
 }
 
-
-// --- MODIFIED DATA LOADING FUNCTIONS ---
-
-// *** MODIFIED: This function now returns its promise ***
-// This is the corrected loadSections function from app-base.js
-// Replace the existing loadSections function with this one
-
+// *** UPDATED: This function now uses new URL structure ***
 function loadSections() {
   const categoryNavPlaceholder = document.getElementById('category-nav-placeholder');
   const footerCategoriesList = document.getElementById('footer-categories-list');
@@ -221,14 +219,19 @@ function loadSections() {
             snap.forEach(doc => {
                 const section = { id: doc.id, ...doc.data() };
                 // Use clean URLs instead of query parameters
-                const url = `/${getSafe(() => section.slug, '#')}`;
+                const url = `/${getSafe(() => section.slug, doc.id.toLowerCase())}`;
                 const name = getSafe(() => section.name, 'Unnamed Section');
                 
                 navHTML += `<li class="nav-item"><a class="nav-link" href="${url}">${name}</a></li>`;
                 footerCategoriesHTML += `<li><a href="${url}">${name}</a></li>`;
                 if (sidebarContainer) sideHTML += `<li><a href="${url}">${name}</a></li>`;
                 
-                categoryCache[doc.id] = name; // Populate the cache
+                // Populate the cache with both name and slug
+                categoryCache[doc.id] = {
+                    name: name,
+                    slug: getSafe(() => section.slug, doc.id.toLowerCase())
+                };
+                
                 if (section.api) apiSections.push(section);
             });
         }
@@ -275,11 +278,7 @@ function loadSections() {
     });
 }
 
-// ... All other functions (loadSiteSettings, loadRealTimeStockData, renderApiArticles, etc.) remain unchanged ...
-// Make sure you haven't duplicated them at the end of the file.
-
 function loadSiteSettings() {
-    // ... (This function remains unchanged) ...
     if (!db) { console.error("Firestore (db) not initialized for loadSiteSettings"); return; }
       Promise.all([
           db.collection('settings').doc('general').get(),
@@ -320,7 +319,6 @@ function loadSiteSettings() {
 }
 
 function loadRealTimeStockData() {
-    // ... (This function remains unchanged) ...
     const tickerContainer = document.getElementById('stock-ticker');
       if (!tickerContainer) return;
       const innerContent = tickerContainer.querySelector('.stock-ticker-inner-content');
@@ -330,7 +328,7 @@ function loadRealTimeStockData() {
       errorElement.style.display = 'block';
       innerContent.innerHTML = '';
       const symbols = ['AAPL','MSFT','AMZN','GOOGL','META','NVDA','TSLA'];
-      const getStocksCallable = functions.httpsCallable('getFinnhubStockData');
+      const getStocksCallable = functions.httpsCallable('getStockDataForCompanies');
       getStocksCallable({ symbols: symbols })
         .then(result => {
           const stockData = getSafe(() => result.data.stockData, []);
@@ -370,11 +368,13 @@ function loadAndRenderApiArticles(category) {
       const categoryId = `cat-api-${category.id}`;
       let categorySection = document.getElementById(categoryId);
 
+      const categorySlug = getSafe(() => category.slug, category.id.toLowerCase());
+
       if (!categorySection) {
         apiContainer.insertAdjacentHTML('beforeend', `
         <div id="${categoryId}" class="category-articles-section">
         <div class="section-header">
-            <h2 class="section-title">${getSafe(() => category.name, 'News')}</h2><a href="/category.html?slug=${getSafe(() => category.slug, '#')}" class="see-all">See All</a></div>
+            <h2 class="section-title">${getSafe(() => category.name, 'News')}</h2><a href="/${categorySlug}" class="see-all">See All</a></div>
             <div class="spinner-container"><div class="spinner-border" role="status"></div><p>Loading ${getSafe(() => category.name, 'news')} articles...</p></div>
           </div>`);
         categorySection = document.getElementById(categoryId);
@@ -418,13 +418,14 @@ function loadAndRenderApiArticles(category) {
         .catch(error => { renderApiError(category, error); });
 }
 
-// --- MOVED FROM INDEX.HTML: Render API Articles ---
+// --- UPDATED: Render API Articles with new URL structure ---
 function renderApiArticles(category, articles, sourceApi) {
       const categoryId = `cat-api-${category.id}`;
       const categorySection = document.getElementById(categoryId);
       if (!categorySection) return;
 
-      const categoryUrl = `/category.html?slug=${getSafe(() => category.slug, '#')}`;
+      const categorySlug = getSafe(() => category.slug, category.id.toLowerCase());
+      const categoryUrl = `/${categorySlug}`;
       const categoryName = getSafe(() => category.name, 'News');
 
       let sectionHtml = `<div class="section-header"><h2 class="section-title">${categoryName}</h2><a href="${categoryUrl}" class="see-all">See All</a></div>`;
@@ -456,8 +457,7 @@ function renderApiArticles(category, articles, sourceApi) {
       categorySection.innerHTML = sectionHtml;
 }
 
-// --- MOVED FROM INDEX.HTML: Render API Error ---
-// --- MOVED FROM INDEX.HTML: Render API Error ---
+// --- UPDATED: Render API Error with new URL structure ---
 function renderApiError(category, error) {
   const categoryId = `cat-api-${category.id}`;
   const categorySection = document.getElementById(categoryId);
@@ -474,7 +474,8 @@ function renderApiError(category, error) {
       categorySection.innerHTML = ''; // Also clear its content
   } else {
       // For any other type of error, display the original error message.
-      const categoryUrl = `/category.html?slug=${getSafe(() => category.slug, '#')}`;
+      const categorySlug = getSafe(() => category.slug, category.id.toLowerCase());
+      const categoryUrl = `/${categorySlug}`;
       const categoryName = getSafe(() => category.name, 'News');
       console.error(`Rendering API error for ${categoryName}:`, error);
       categorySection.innerHTML = `
@@ -482,101 +483,6 @@ function renderApiError(category, error) {
         <p class="text-danger text-center mt-3">Could not load articles.<br><small>(${errorMessage || 'Please try again later.'})</small></p>`;
   }
 }
-
-// --- MOVED FROM INDEX.HTML: Load Stock Ticker ---
-function loadRealTimeStockData() {
-      const tickerContainer = document.getElementById('stock-ticker');
-      if (!tickerContainer) return;
-      const innerContent = tickerContainer.querySelector('.stock-ticker-inner-content');
-      const errorElement = tickerContainer.querySelector('.stock-ticker-error');
-      if (!innerContent || !errorElement || !functions) { console.warn("Stock ticker elements or Functions service not ready."); return; }
-
-      errorElement.textContent = 'Loading stock data...';
-      errorElement.style.display = 'block';
-      innerContent.innerHTML = '';
-
-      const symbols = ['AAPL','MSFT','AMZN','GOOGL','META','NVDA','TSLA'];
-      const getStocksCallable = functions.httpsCallable('getFinnhubStockData');
-
-      getStocksCallable({ symbols: symbols })
-        .then(result => {
-          const stockData = getSafe(() => result.data.stockData, []);
-          if (!Array.isArray(stockData) || stockData.length === 0) throw new Error("No stock data received.");
-
-          let stockHtml = '';
-          let validDataCount = 0;
-          stockData.forEach(stock => {
-            const symbol = getSafe(() => stock.symbol,'ERR');
-            if (stock.error || typeof stock.c === 'undefined' || typeof stock.dp === 'undefined') {
-              console.warn(`Error/incomplete data for stock: ${symbol}`, stock.message || '');
-              stockHtml += `<div class="stock-item"><span class="stock-symbol">${symbol}</span><span class="stock-price text-muted">--</span><span class="stock-change text-muted">Error</span></div>`;
-            } else {
-              const price = getSafe(() => stock.c, 0);
-              const percentChange = getSafe(() => stock.dp, 0);
-              const changeClass = percentChange >= 0 ? 'text-success' : 'text-danger';
-              stockHtml += `<div class="stock-item"><span class="stock-symbol">${symbol}</span><span class="stock-price">${price.toFixed(2)}</span><span class="stock-change ${changeClass}">${percentChange >= 0 ? '+' : ''}${percentChange.toFixed(1)}%</span></div>`;
-               validDataCount++;
-            }
-          });
-
-           if (validDataCount > 0) {
-                innerContent.innerHTML = stockHtml + stockHtml; // Duplicate for animation
-                errorElement.style.display = 'none';
-           } else { throw new Error("No valid stock data retrieved."); }
-        })
-        .catch(error => {
-          console.error('Error loading stock data:', error);
-          errorElement.textContent = `Stock data unavailable: ${getSafe(()=>error.message,'Error')}`;
-          errorElement.style.display = 'block';
-          innerContent.innerHTML = '';
-        });
-}
-
-
-// --- Initialize Common Loaders AFTER DOM is ready ---
-document.addEventListener('DOMContentLoaded', function() {
-    console.log("app-base.js: DOM Loaded.");
-
-  // 1) Load the navbar HTML into the placeholder,
-  // 2) then run site settings, section loader, and stock ticker.
-  function loadNavbarAndDependentContent() {
-    const placeholder = document.getElementById('navbar-placeholder');
-    if (!placeholder) {
-      console.error("Navbar placeholder not found!");
-      return;
-    }
-    fetch('/nav.html')
-      .then(r => {
-        if (!r.ok) throw new Error(`nav.html load failed: ${r.status}`);
-        return r.text();
-      })
-      .then(html => {
-        placeholder.innerHTML = html;
-        console.log("Navbar injected.");
-
-        // Highlight the active link
-        const path = window.location.pathname;
-        document.querySelectorAll('#navbar-placeholder .nav-link').forEach(link => {
-          link.classList.toggle('active', new URL(link.href).pathname === path);
-        });
-
-        // Now call our global loaders (defined up above in this file)
-        if (typeof loadSiteSettings === 'function')      loadSiteSettings();
-        if (typeof loadSections     === 'function')      loadSections();
-        if (typeof loadRealTimeStockData === 'function') loadRealTimeStockData();
-      })
-      .catch(err => {
-        console.error('Error loading nav.html:', err);
-        placeholder.innerHTML = '<div class="text-center text-danger">Failed to load navigation.</div>';
-      });
-  }
-
-  // Kick it all off
-  loadNavbarAndDependentContent();
-});
-
-console.log("app-base.js loaded.");
-// Add this to your app.js file
 
 // Import email components when needed
 function loadEmailComponent(componentName) {
@@ -628,40 +534,5 @@ window.loadEmailAnalytics = function() {
 window.loadEmailDashboard = function() {
   loadEmailComponent('Dashboard');
 };
-// Category slug helper (added for clean URLs)
-window.categorySlugCache = {};
 
-window.getCategorySlug = async function(categoryId) {
-    if (!categoryId) return null;
-    
-    // Check cache first
-    if (window.categorySlugCache[categoryId]) {
-        return window.categorySlugCache[categoryId];
-    }
-    
-    try {
-        const doc = await db.collection('sections').doc(categoryId).get();
-        if (doc.exists) {
-            const slug = doc.data().slug;
-            // Cache it
-            window.categorySlugCache[categoryId] = slug;
-            return slug;
-        }
-    } catch (error) {
-        console.error('Error getting category slug:', error);
-    }
-    return null;
-};
-
-// Preload category slugs when sections are loaded
-document.addEventListener('sectionsLoaded', async () => {
-    try {
-        const snapshot = await db.collection('sections').where('active', '==', true).get();
-        snapshot.forEach(doc => {
-            window.categorySlugCache[doc.id] = doc.data().slug;
-        });
-        console.log('Category slugs preloaded:', window.categorySlugCache);
-    } catch (error) {
-        console.error('Error preloading category slugs:', error);
-    }
-});
+console.log("app-base.js loaded.");

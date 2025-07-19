@@ -1,7 +1,7 @@
 //tracking.js
-const functions = require('firebase-functions');
-const admin = require('./admin'); // Import the initialized admin SDK
-const db = require('./db'); // Import the initialized Firestore instance
+const functions = require("firebase-functions");
+const admin = require("./admin"); // Import the initialized admin SDK
+const db = require("./db"); // Import the initialized Firestore instance
 // Track email open via tracking pixel
 exports.trackOpen = functions.https.onRequest(async (req, res) => {
   const trackingId = req.query.tid;
@@ -64,7 +64,7 @@ exports.getCampaignTracking = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
-      "You must be logged in to access tracking data."
+      "You must be logged in to access tracking data.",
     );
   }
   
@@ -96,7 +96,7 @@ exports.getCampaignTracking = functions.https.onCall(async (data, context) => {
       opened: 0,
       clicked: 0,
       bounced: 0,
-      complaints: 0
+      complaints: 0,
     };
     
     // Link click data
@@ -105,11 +105,11 @@ exports.getCampaignTracking = functions.https.onCall(async (data, context) => {
     trackingSnapshot.forEach(doc => {
       const data = doc.data();
       
-      if (data.status === 'delivered') stats.delivered++;
+      if (data.status === "delivered") stats.delivered++;
       if (data.openedAt) stats.opened++;
       if (data.clickedAt) stats.clicked++;
-      if (data.status === 'bounced') stats.bounced++;
-      if (data.status === 'complaint') stats.complaints++;
+      if (data.status === "bounced") stats.bounced++;
+      if (data.status === "complaint") stats.complaints++;
       
       // Process link clicks
       if (data.clickedLinks && data.clickedLinks.length > 0) {
@@ -130,20 +130,20 @@ exports.getCampaignTracking = functions.https.onCall(async (data, context) => {
       const data = doc.data();
       
       if (data.sentAt) {
-        const date = data.sentAt.toDate().toISOString().split('T')[0];
+        const date = data.sentAt.toDate().toISOString().split("T")[0];
         
         if (!dailyStats[date]) {
           dailyStats[date] = {
             sent: 0,
             delivered: 0,
             opened: 0,
-            clicked: 0
+            clicked: 0,
           };
         }
         
         dailyStats[date].sent++;
         
-        if (data.status === 'delivered') dailyStats[date].delivered++;
+        if (data.status === "delivered") dailyStats[date].delivered++;
         if (data.openedAt) dailyStats[date].opened++;
         if (data.clickedAt) dailyStats[date].clicked++;
       }
@@ -152,7 +152,7 @@ exports.getCampaignTracking = functions.https.onCall(async (data, context) => {
     // Convert to array for easier processing in the frontend
     const dailyStatsArray = Object.keys(dailyStats).map(date => ({
       date,
-      ...dailyStats[date]
+      ...dailyStats[date],
     }));
     
     // Sort by date
@@ -161,11 +161,11 @@ exports.getCampaignTracking = functions.https.onCall(async (data, context) => {
     return {
       campaign: {
         id: campaignDoc.id,
-        ...campaign
+        ...campaign,
       },
       stats,
       linkClicks: Object.entries(linkClicks).map(([url, count]) => ({ url, count })),
-      dailyStats: dailyStatsArray
+      dailyStats: dailyStatsArray,
     };
   } catch (error) {
     console.error("Error getting campaign tracking:", error);
@@ -179,7 +179,7 @@ exports.getEmailAnalytics = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
-      "You must be logged in to access email analytics."
+      "You must be logged in to access email analytics.",
     );
   }
   
@@ -187,7 +187,7 @@ exports.getEmailAnalytics = functions.https.onCall(async (data, context) => {
     const { period } = data || {};
     
     // Default to last 30 days
-    const days = period === 'week' ? 7 : period === 'year' ? 365 : 30;
+    const days = period === "week" ? 7 : period === "year" ? 365 : 30;
     
     // Calculate start date
     const startDate = new Date();
@@ -212,7 +212,7 @@ exports.getEmailAnalytics = functions.https.onCall(async (data, context) => {
       totalClicked: 0,
       openRate: 0,
       clickRate: 0,
-      clickToOpenRate: 0
+      clickToOpenRate: 0,
     };
     
     trackingSnapshot.forEach(doc => {
@@ -237,13 +237,13 @@ exports.getEmailAnalytics = functions.https.onCall(async (data, context) => {
       const data = doc.data();
       
       if (data.sentAt) {
-        const date = data.sentAt.toDate().toISOString().split('T')[0];
+        const date = data.sentAt.toDate().toISOString().split("T")[0];
         
         if (!dailyStats[date]) {
           dailyStats[date] = {
             sent: 0,
             opened: 0,
-            clicked: 0
+            clicked: 0,
           };
         }
         
@@ -262,7 +262,7 @@ exports.getEmailAnalytics = functions.https.onCall(async (data, context) => {
         : 0,
       clickRate: dailyStats[date].sent > 0 
         ? (dailyStats[date].clicked / dailyStats[date].sent) * 100 
-        : 0
+        : 0,
     }));
     
     // Sort by date
@@ -274,7 +274,7 @@ exports.getEmailAnalytics = functions.https.onCall(async (data, context) => {
     campaignsSnapshot.forEach(doc => {
       campaigns.push({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       });
     });
     
@@ -283,7 +283,7 @@ exports.getEmailAnalytics = functions.https.onCall(async (data, context) => {
       campaign.stats = campaign.stats || {
         sent: 0,
         opened: 0,
-        clicked: 0
+        clicked: 0,
       };
       
       campaign.openRate = campaign.stats.sent > 0 
@@ -304,7 +304,7 @@ exports.getEmailAnalytics = functions.https.onCall(async (data, context) => {
     return {
       stats,
       dailyStats: dailyStatsArray,
-      topCampaigns
+      topCampaigns,
     };
   } catch (error) {
     console.error("Error getting email analytics:", error);
@@ -332,20 +332,20 @@ async function logEmailOpen(trackingId) {
     // Update tracking data
     await trackingDoc.ref.update({
       openedAt: admin.firestore.FieldValue.serverTimestamp(),
-      status: trackingData.status === 'delivered' ? 'opened' : trackingData.status
+      status: trackingData.status === "delivered" ? "opened" : trackingData.status,
     });
     
     // Update subscriber stats
     if (trackingData.subscriberId) {
       await db.collection("subscribers").doc(trackingData.subscriberId).update({
-        emailsOpened: admin.firestore.FieldValue.increment(1)
+        emailsOpened: admin.firestore.FieldValue.increment(1),
       });
     }
     
     // Update campaign stats
     if (trackingData.campaignId) {
       await db.collection("campaigns").doc(trackingData.campaignId).update({
-        "stats.opened": admin.firestore.FieldValue.increment(1)
+        "stats.opened": admin.firestore.FieldValue.increment(1),
       });
     }
   } catch (error) {
@@ -370,16 +370,16 @@ async function logLinkClick(trackingId, url) {
     // Prepare click data
     const clickData = {
       url: decodeURIComponent(url),
-      clickedAt: now
+      clickedAt: now,
     };
     
     // Update tracking data
     const updates = {
       clickedAt: trackingData.clickedAt || now,
-      status: trackingData.status === 'delivered' || trackingData.status === 'opened' 
-        ? 'clicked' 
+      status: trackingData.status === "delivered" || trackingData.status === "opened" 
+        ? "clicked" 
         : trackingData.status,
-      clickedLinks: admin.firestore.FieldValue.arrayUnion(clickData)
+      clickedLinks: admin.firestore.FieldValue.arrayUnion(clickData),
     };
     
     await trackingDoc.ref.update(updates);
@@ -389,14 +389,14 @@ async function logLinkClick(trackingId, url) {
       // Update subscriber stats
       if (trackingData.subscriberId) {
         await db.collection("subscribers").doc(trackingData.subscriberId).update({
-          emailsClicked: admin.firestore.FieldValue.increment(1)
+          emailsClicked: admin.firestore.FieldValue.increment(1),
         });
       }
       
       // Update campaign stats
       if (trackingData.campaignId) {
         await db.collection("campaigns").doc(trackingData.campaignId).update({
-          "stats.clicked": admin.firestore.FieldValue.increment(1)
+          "stats.clicked": admin.firestore.FieldValue.increment(1),
         });
       }
     }

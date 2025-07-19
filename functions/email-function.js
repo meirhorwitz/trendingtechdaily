@@ -1,5 +1,5 @@
-const functions = require('firebase-functions');
-const axios = require('axios');
+const functions = require("firebase-functions");
+const axios = require("axios");
 
 // Simple email function that doesn't use auth triggers
 exports.manualSendWelcomeEmail = functions.https.onCall(async (data, context) => {
@@ -11,7 +11,7 @@ exports.manualSendWelcomeEmail = functions.https.onCall(async (data, context) =>
 
     // Basic validation
     if (!userEmail) {
-      throw new functions.https.HttpsError('invalid-argument', 'Email required');
+      throw new functions.https.HttpsError("invalid-argument", "Email required");
     }
 
     console.log(`Manual welcome email request for: ${userEmail}`);
@@ -20,10 +20,10 @@ exports.manualSendWelcomeEmail = functions.https.onCall(async (data, context) =>
     return { 
       success: true, 
       message: "Welcome email process initiated",
-      data: { email: userEmail, name: userName, uid: userUid }
+      data: { email: userEmail, name: userName, uid: userUid },
     };
   } catch (error) {
     console.error("Error in manualSendWelcomeEmail:", error);
-    throw new functions.https.HttpsError('internal', 'Failed to process welcome email');
+    throw new functions.https.HttpsError("internal", "Failed to process welcome email");
   }
 });

@@ -1,6 +1,6 @@
 // functions/services/firestoreService.js
 
-const { db, admin, logger } = require('../config');
+const { db, admin, logger } = require("../config");
 
 /**
  * Deletes old items and saves a new batch of items for a given category.

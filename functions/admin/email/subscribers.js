@@ -1,14 +1,14 @@
 //subscribers.js
-const functions = require('firebase-functions');
-const admin = require('./admin'); // Import the initialized admin SDK
-const db = require('./db'); // Import the initialized Firestore instance
+const functions = require("firebase-functions");
+const admin = require("./admin"); // Import the initialized admin SDK
+const db = require("./db"); // Import the initialized Firestore instance
 // Create or update a subscriber
 exports.saveSubscriber = functions.https.onCall(async (data, context) => {
   // Verify authentication
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
-      "You must be logged in to manage subscribers."
+      "You must be logged in to manage subscribers.",
     );
   }
   
@@ -19,7 +19,7 @@ exports.saveSubscriber = functions.https.onCall(async (data, context) => {
     if (!email || !validateEmail(email)) {
       throw new functions.https.HttpsError(
         "invalid-argument",
-        "Valid email is required"
+        "Valid email is required",
       );
     }
     
@@ -39,16 +39,16 @@ exports.saveSubscriber = functions.https.onCall(async (data, context) => {
     if (existingId) {
       throw new functions.https.HttpsError(
         "already-exists",
-        "A subscriber with this email already exists"
+        "A subscriber with this email already exists",
       );
     }
     
     // Subscriber data
     const subscriberData = {
       email,
-      name: name || '',
-      status: status || 'active',
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      name: name || "",
+      status: status || "active",
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
     
     if (listIds) subscriberData.listIds = listIds;
@@ -95,12 +95,12 @@ exports.saveSubscriber = functions.https.onCall(async (data, context) => {
           
           batch.set(memberRef, {
             subscriberId: subscriberId,
-            addedAt: admin.firestore.FieldValue.serverTimestamp()
+            addedAt: admin.firestore.FieldValue.serverTimestamp(),
           });
           
           // Update list subscriber count
           batch.update(db.collection("lists").doc(listId), {
-            subscriberCount: admin.firestore.FieldValue.increment(1)
+            subscriberCount: admin.firestore.FieldValue.increment(1),
           });
         }
         
@@ -118,7 +118,7 @@ exports.saveSubscriber = functions.https.onCall(async (data, context) => {
         
         // Update list subscriber count
         batch.update(db.collection("lists").doc(listId), {
-          subscriberCount: admin.firestore.FieldValue.increment(-1)
+          subscriberCount: admin.firestore.FieldValue.increment(-1),
         });
       }
       
@@ -138,7 +138,7 @@ exports.getSubscribers = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
-      "You must be logged in to access subscribers."
+      "You must be logged in to access subscribers.",
     );
   }
   
@@ -177,7 +177,7 @@ exports.getSubscribers = functions.https.onCall(async (data, context) => {
       const subscribersPromises = batches.map(batch => 
         db.collection("subscribers")
           .where(admin.firestore.FieldPath.documentId(), "in", batch)
-          .get()
+          .get(),
       );
       
       const snapshotsList = await Promise.all(subscribersPromises);
@@ -189,7 +189,7 @@ exports.getSubscribers = functions.https.onCall(async (data, context) => {
         snapshot.forEach(doc => {
           subscribers.push({
             id: doc.id,
-            ...doc.data()
+            ...doc.data(),
           });
         });
       });
@@ -231,7 +231,7 @@ exports.getSubscribers = functions.https.onCall(async (data, context) => {
       subscribersSnapshot.forEach(doc => {
         subscribers.push({
           id: doc.id,
-          ...doc.data()
+          ...doc.data(),
         });
       });
       
@@ -249,7 +249,7 @@ exports.getSubscriber = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
-      "You must be logged in to access subscriber data."
+      "You must be logged in to access subscriber data.",
     );
   }
   
@@ -308,7 +308,7 @@ exports.getSubscriber = functions.https.onCall(async (data, context) => {
         deliveredAt: trackingData.deliveredAt,
         openedAt: trackingData.openedAt,
         clickedAt: trackingData.clickedAt,
-        status: trackingData.status
+        status: trackingData.status,
       });
     }
     
@@ -316,7 +316,7 @@ exports.getSubscriber = functions.https.onCall(async (data, context) => {
       id: subscriberDoc.id,
       ...subscriberDoc.data(),
       listIds,
-      activity
+      activity,
     };
   } catch (error) {
     console.error("Error getting subscriber:", error);
@@ -330,7 +330,7 @@ exports.deleteSubscriber = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
-      "You must be logged in to manage subscribers."
+      "You must be logged in to manage subscribers.",
     );
   }
   
@@ -363,7 +363,7 @@ exports.deleteSubscriber = functions.https.onCall(async (data, context) => {
       // Update list subscriber count
       const listId = doc.ref.parent.parent.id;
       batch.update(db.collection("lists").doc(listId), {
-        subscriberCount: admin.firestore.FieldValue.increment(-1)
+        subscriberCount: admin.firestore.FieldValue.increment(-1),
       });
     });
     
@@ -385,7 +385,7 @@ exports.importSubscribers = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
-      "You must be logged in to import subscribers."
+      "You must be logged in to import subscribers.",
     );
   }
   
@@ -397,27 +397,27 @@ exports.importSubscribers = functions.https.onCall(async (data, context) => {
     }
     
     // Decode CSV data
-    const csvString = Buffer.from(csvBase64, 'base64').toString('utf-8');
+    const csvString = Buffer.from(csvBase64, "base64").toString("utf-8");
     
     // Parse CSV (simple parser, you might want to use a library in production)
-    const lines = csvString.split('\n');
-    const headers = lines[0].split(',').map(header => header.trim());
+    const lines = csvString.split("\n");
+    const headers = lines[0].split(",").map(header => header.trim());
     
     // Find email column
     const emailIndex = headers.findIndex(h => 
-      h.toLowerCase() === 'email' || h.toLowerCase() === 'email address'
+      h.toLowerCase() === "email" || h.toLowerCase() === "email address",
     );
     
     if (emailIndex === -1) {
       throw new functions.https.HttpsError(
         "invalid-argument",
-        "CSV must contain an 'email' column"
+        "CSV must contain an 'email' column",
       );
     }
     
     // Find name column if it exists
     const nameIndex = headers.findIndex(h => 
-      h.toLowerCase() === 'name' || h.toLowerCase() === 'first name' || h.toLowerCase() === 'fullname'
+      h.toLowerCase() === "name" || h.toLowerCase() === "first name" || h.toLowerCase() === "fullname",
     );
     
     // Process subscribers
@@ -441,7 +441,7 @@ exports.importSubscribers = functions.https.onCall(async (data, context) => {
         continue;
       }
       
-      const name = nameIndex !== -1 ? values[nameIndex].trim() : '';
+      const name = nameIndex !== -1 ? values[nameIndex].trim() : "";
       
       // Build custom fields
       const customFields = {};
@@ -455,7 +455,7 @@ exports.importSubscribers = functions.https.onCall(async (data, context) => {
       subscribers.push({
         email,
         name,
-        customFields
+        customFields,
       });
     }
     
@@ -464,7 +464,7 @@ exports.importSubscribers = functions.https.onCall(async (data, context) => {
       total: subscribers.length,
       added: 0,
       updated: 0,
-      errors: errors
+      errors: errors,
     };
     
     for (const subscriber of subscribers) {
@@ -486,7 +486,7 @@ exports.importSubscribers = functions.https.onCall(async (data, context) => {
             await db.collection("subscribers").doc(subscriberId).update({
               name: subscriber.name,
               customFields: subscriber.customFields,
-              updatedAt: admin.firestore.FieldValue.serverTimestamp()
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
             });
             
             results.updated++;
@@ -499,12 +499,12 @@ exports.importSubscribers = functions.https.onCall(async (data, context) => {
           const subscriberData = {
             email: subscriber.email,
             name: subscriber.name,
-            status: 'active',
+            status: "active",
             subscriptionDate: admin.firestore.FieldValue.serverTimestamp(),
             customFields: subscriber.customFields,
             emailsSent: 0,
             emailsOpened: 0,
-            emailsClicked: 0
+            emailsClicked: 0,
           };
           
           if (listIds) {
@@ -529,12 +529,12 @@ exports.importSubscribers = functions.https.onCall(async (data, context) => {
             
             batch.set(memberRef, {
               subscriberId: subscriberId,
-              addedAt: admin.firestore.FieldValue.serverTimestamp()
+              addedAt: admin.firestore.FieldValue.serverTimestamp(),
             });
             
             // Update list subscriber count
             batch.update(db.collection("lists").doc(listId), {
-              subscriberCount: admin.firestore.FieldValue.increment(1)
+              subscriberCount: admin.firestore.FieldValue.increment(1),
             });
           }
           
@@ -559,7 +559,7 @@ exports.exportSubscribers = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
-      "You must be logged in to export subscribers."
+      "You must be logged in to export subscribers.",
     );
   }
   
@@ -586,7 +586,7 @@ exports.exportSubscribers = functions.https.onCall(async (data, context) => {
         // Return empty CSV
         return {
           csv: "email,name,status,subscriptionDate\n",
-          count: 0
+          count: 0,
         };
       }
       
@@ -602,7 +602,7 @@ exports.exportSubscribers = functions.https.onCall(async (data, context) => {
       const subscribersPromises = batches.map(batch => 
         db.collection("subscribers")
           .where(admin.firestore.FieldPath.documentId(), "in", batch)
-          .get()
+          .get(),
       );
       
       const snapshotsList = await Promise.all(subscribersPromises);
@@ -614,7 +614,7 @@ exports.exportSubscribers = functions.https.onCall(async (data, context) => {
         snapshot.forEach(doc => {
           subscribers.push({
             id: doc.id,
-            ...doc.data()
+            ...doc.data(),
           });
         });
       });
@@ -635,7 +635,7 @@ exports.exportSubscribers = functions.https.onCall(async (data, context) => {
       subscribersSnapshot.forEach(doc => {
         subscribers.push({
           id: doc.id,
-          ...doc.data()
+          ...doc.data(),
         });
       });
       
@@ -673,19 +673,19 @@ function generateSubscriberCSV(subscribers) {
   // Add subscriber data
   subscribers.forEach(subscriber => {
     const subscriptionDate = subscriber.subscriptionDate 
-      ? subscriber.subscriptionDate.toDate().toISOString().split('T')[0]
-      : '';
+      ? subscriber.subscriptionDate.toDate().toISOString().split("T")[0]
+      : "";
     
     csv += `${escapeCSVValue(subscriber.email)},`;
-    csv += `${escapeCSVValue(subscriber.name || '')},`;
-    csv += `${escapeCSVValue(subscriber.status || '')},`;
+    csv += `${escapeCSVValue(subscriber.name || "")},`;
+    csv += `${escapeCSVValue(subscriber.status || "")},`;
     csv += `${escapeCSVValue(subscriptionDate)}`;
     
     // Add custom fields
     customFields.forEach(field => {
       const value = subscriber.customFields && subscriber.customFields[field] 
         ? subscriber.customFields[field]
-        : '';
+        : "";
       
       csv += `,${escapeCSVValue(value)}`;
     });
@@ -695,22 +695,22 @@ function generateSubscriberCSV(subscribers) {
   
   return {
     csv,
-    count: subscribers.length
+    count: subscribers.length,
   };
 }
 
 // Helper function to escape CSV values
 function escapeCSVValue(value) {
   if (value === null || value === undefined) {
-    return '';
+    return "";
   }
   
   const stringValue = String(value);
   
   // If the value contains a comma, newline, or double quote, enclose it in double quotes
-  if (stringValue.includes(',') || stringValue.includes('\n') || stringValue.includes('"')) {
+  if (stringValue.includes(",") || stringValue.includes("\n") || stringValue.includes("\"")) {
     // Replace double quotes with two double quotes
-    return `"${stringValue.replace(/"/g, '""')}"`;
+    return `"${stringValue.replace(/"/g, "\"\"")}"`;
   }
   
   return stringValue;
@@ -719,25 +719,25 @@ function escapeCSVValue(value) {
 // Helper function to parse a CSV line (handles quoted values)
 function parseCSVLine(line) {
   const result = [];
-  let current = '';
+  let current = "";
   let inQuotes = false;
   
   for (let i = 0; i < line.length; i++) {
     const char = line[i];
     
-    if (char === '"') {
-      if (inQuotes && i + 1 < line.length && line[i + 1] === '"') {
+    if (char === "\"") {
+      if (inQuotes && i + 1 < line.length && line[i + 1] === "\"") {
         // Double quotes inside quotes - add a single quote
-        current += '"';
+        current += "\"";
         i++;
       } else {
         // Toggle quotes mode
         inQuotes = !inQuotes;
       }
-    } else if (char === ',' && !inQuotes) {
+    } else if (char === "," && !inQuotes) {
       // End of field
       result.push(current);
-      current = '';
+      current = "";
     } else {
       current += char;
     }

@@ -210,7 +210,7 @@
 
             let htmlContent = '';
             podcasts.forEach(podcast => {
-                const imageUrl = getSafe(() => podcast.imageUrl, 'img/default-podcast-art.png');
+                const imageUrl = getSafe(() => podcast.imageUrl, '');
                 const podcastName = getSafe(() => podcast.name, 'Untitled Podcast');
                 const publisher = getSafe(() => podcast.publisher, 'N/A');
                 let description = getSafe(() => podcast.html_description);
@@ -227,7 +227,7 @@
                 htmlContent += `
                     <div class="col">
                         <div class="card h-100 podcast-card shadow-sm">
-                            <img src="${imageUrl}" class="card-img-top" alt="${podcastName}" onerror="this.onerror=null; this.src='img/default-podcast-art.png';">
+                            <img src="${imageUrl}" class="card-img-top" alt="${podcastName}">
                             <div class="card-body">
                                 <h5 class="card-title">${podcastName}</h5>
                                 <p class="card-text small text-muted mb-2">By: ${publisher}</p>

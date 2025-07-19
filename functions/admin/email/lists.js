@@ -1,7 +1,7 @@
 //lists.js
-const functions = require('firebase-functions');
-const admin = require('./admin'); // Import the initialized admin SDK
-const db = require('./db'); // Import the initialized Firestore instance
+const functions = require("firebase-functions");
+const admin = require("./admin"); // Import the initialized admin SDK
+const db = require("./db"); // Import the initialized Firestore instance
 
 // Create or update a list
 exports.saveList = functions.https.onCall(async (data, context) => {
@@ -9,7 +9,7 @@ exports.saveList = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
-      "You must be logged in to manage email lists."
+      "You must be logged in to manage email lists.",
     );
   }
   
@@ -20,15 +20,15 @@ exports.saveList = functions.https.onCall(async (data, context) => {
     if (!name) {
       throw new functions.https.HttpsError(
         "invalid-argument",
-        "List name is required"
+        "List name is required",
       );
     }
     
     // List data
     const listData = {
       name,
-      description: description || '',
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      description: description || "",
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
     
     let listId = id;
@@ -58,7 +58,7 @@ exports.getLists = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
-      "You must be logged in to access email lists."
+      "You must be logged in to access email lists.",
     );
   }
   
@@ -72,7 +72,7 @@ exports.getLists = functions.https.onCall(async (data, context) => {
     listsSnapshot.forEach(doc => {
       lists.push({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       });
     });
     
@@ -89,7 +89,7 @@ exports.getList = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
-      "You must be logged in to access email lists."
+      "You must be logged in to access email lists.",
     );
   }
   
@@ -108,7 +108,7 @@ exports.getList = functions.https.onCall(async (data, context) => {
     
     return {
       id: listDoc.id,
-      ...listDoc.data()
+      ...listDoc.data(),
     };
   } catch (error) {
     console.error("Error getting list:", error);
@@ -122,7 +122,7 @@ exports.deleteList = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
-      "You must be logged in to manage email lists."
+      "You must be logged in to manage email lists.",
     );
   }
   
@@ -142,7 +142,7 @@ exports.deleteList = functions.https.onCall(async (data, context) => {
     if (!campaignsSnapshot.empty) {
       throw new functions.https.HttpsError(
         "failed-precondition",
-        "List is in use by one or more campaigns and cannot be deleted"
+        "List is in use by one or more campaigns and cannot be deleted",
       );
     }
     
@@ -155,7 +155,7 @@ exports.deleteList = functions.https.onCall(async (data, context) => {
     if (!workflowsSnapshot.empty) {
       throw new functions.https.HttpsError(
         "failed-precondition",
-        "List is in use by one or more workflows and cannot be deleted"
+        "List is in use by one or more workflows and cannot be deleted",
       );
     }
     
@@ -180,7 +180,7 @@ exports.deleteList = functions.https.onCall(async (data, context) => {
       
       // Update subscriber's listIds
       currentBatch.update(db.collection("subscribers").doc(subscriberId), {
-        listIds: admin.firestore.FieldValue.arrayRemove(listId)
+        listIds: admin.firestore.FieldValue.arrayRemove(listId),
       });
       batchCount++;
       
@@ -212,7 +212,7 @@ exports.addSubscribersToList = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
-      "You must be logged in to manage email lists."
+      "You must be logged in to manage email lists.",
     );
   }
   
@@ -272,14 +272,14 @@ exports.addSubscribersToList = functions.https.onCall(async (data, context) => {
         db.collection("lists").doc(listId).collection("members").doc(subscriberId),
         {
           subscriberId: subscriberId,
-          addedAt: admin.firestore.FieldValue.serverTimestamp()
-        }
+          addedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
       );
       batchCount++;
       
       // Update subscriber's listIds
       currentBatch.update(db.collection("subscribers").doc(subscriberId), {
-        listIds: admin.firestore.FieldValue.arrayUnion(listId)
+        listIds: admin.firestore.FieldValue.arrayUnion(listId),
       });
       batchCount++;
       
@@ -301,13 +301,13 @@ exports.addSubscribersToList = functions.https.onCall(async (data, context) => {
     // Update list subscriber count
     await db.collection("lists").doc(listId).update({
       subscriberCount: admin.firestore.FieldValue.increment(addedCount),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
     
     return { 
       success: true, 
       addedCount,
-      skippedCount: subscriberIds.length - addedCount
+      skippedCount: subscriberIds.length - addedCount,
     };
   } catch (error) {
     console.error("Error adding subscribers to list:", error);
@@ -321,7 +321,7 @@ exports.removeSubscribersFromList = functions.https.onCall(async (data, context)
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
-      "You must be logged in to manage email lists."
+      "You must be logged in to manage email lists.",
     );
   }
   
@@ -368,7 +368,7 @@ exports.removeSubscribersFromList = functions.https.onCall(async (data, context)
       
       // Update subscriber's listIds
       currentBatch.update(db.collection("subscribers").doc(subscriberId), {
-        listIds: admin.firestore.FieldValue.arrayRemove(listId)
+        listIds: admin.firestore.FieldValue.arrayRemove(listId),
       });
       batchCount++;
       
@@ -390,13 +390,13 @@ exports.removeSubscribersFromList = functions.https.onCall(async (data, context)
     // Update list subscriber count
     await db.collection("lists").doc(listId).update({
       subscriberCount: admin.firestore.FieldValue.increment(-removedCount),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
     
     return { 
       success: true, 
       removedCount,
-      skippedCount: subscriberIds.length - removedCount
+      skippedCount: subscriberIds.length - removedCount,
     };
   } catch (error) {
     console.error("Error removing subscribers from list:", error);
@@ -410,7 +410,7 @@ exports.getListMembers = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
-      "You must be logged in to access email lists."
+      "You must be logged in to access email lists.",
     );
   }
   
@@ -468,7 +468,7 @@ exports.getListMembers = functions.https.onCall(async (data, context) => {
     const subscribersPromises = batches.map(batch => 
       db.collection("subscribers")
         .where(admin.firestore.FieldPath.documentId(), "in", batch)
-        .get()
+        .get(),
     );
     
     const snapshotsList = await Promise.all(subscribersPromises);
@@ -478,14 +478,14 @@ exports.getListMembers = functions.https.onCall(async (data, context) => {
       snapshot.forEach(doc => {
         subscribers.push({
           id: doc.id,
-          ...doc.data()
+          ...doc.data(),
         });
       });
     });
     
     return { 
       subscribers,
-      total
+      total,
     };
   } catch (error) {
     console.error("Error getting list members:", error);

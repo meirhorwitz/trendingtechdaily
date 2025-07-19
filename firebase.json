@@ -6,44 +6,136 @@
       "**/.*",
       "**/node_modules/**"
     ],
-    "redirects": [
+    "rewrites": [
       {
-        "source": "/about.html",
-        "destination": "/about",
-        "type": 301
+        "source": "/admin/components/components/email/**",
+        "destination": "/admin/components/email/**"
       },
       {
-        "source": "/contact.html",
-        "destination": "/contact",
-        "type": 301
+        "source": "/sitemap.xml",
+        "function": "serveSitemap"
+      },
+      {
+        "source": "/api/**",
+        "function": "api"
+      },
+      {
+        "source": "/article.html",
+        "function": "handleLegacyRedirects"
+      },
+      {
+        "source": "/category.html",
+        "function": "handleLegacyRedirects"
+      },
+      {
+        "source": "/admin",
+        "destination": "/admin/index.html"
+      },
+      {
+        "source": "/admin/**",
+        "destination": "/admin/index.html"
+      },
+      {
+        "source": "/about.html",
+        "destination": "/about.html"
+      },
+      {
+        "source": "/about",
+        "destination": "/about.html"
       },
       {
         "source": "/privacy.html",
-        "destination": "/privacy",
-        "type": 301
+        "destination": "/privacy.html"
+      },
+      {
+        "source": "/privacy",
+        "destination": "/privacy.html"
       },
       {
         "source": "/terms.html",
-        "destination": "/terms",
-        "type": 301
+        "destination": "/terms.html"
+      },
+      {
+        "source": "/terms",
+        "destination": "/terms.html"
+      },
+      {
+        "source": "/login.html",
+        "destination": "/login.html"
+      },
+      {
+        "source": "/login",
+        "destination": "/login.html"
+      },
+      {
+        "source": "/signup.html",
+        "destination": "/signup.html"
+      },
+      {
+        "source": "/signup",
+        "destination": "/signup.html"
+      },
+      {
+        "source": "/stock-data.html",
+        "destination": "/stock-data.html"
+      },
+      {
+        "source": "/stock-data",
+        "destination": "/stock-data.html"
+      },
+      {
+        "source": "/podcasts.html",
+        "destination": "/podcasts.html"
+      },
+      {
+        "source": "/podcasts",
+        "destination": "/podcasts.html"
+      },
+      {
+        "source": "/",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/js/**",
+        "destination": "/js/**"
+      },
+      {
+        "source": "/css/**",
+        "destination": "/css/**"
+      },
+      {
+        "source": "/img/**",
+        "destination": "/img/**"
+      },
+      {
+        "source": "/json/**",
+        "destination": "/json/**"
+      },
+      {
+        "source": "/*/*",
+        "destination": "/router.html"
+      },
+      {
+        "source": "/*",
+        "destination": "/router.html"
       }
     ],
     "headers": [
       {
-        "source": "**/*.@(js|css)",
+        "source": "**/*.js",
         "headers": [
           {
-            "key": "Cache-Control",
-            "value": "max-age=31536000"
+            "key": "Content-Type",
+            "value": "application/javascript"
           }
         ]
       },
       {
-        "source": "**/*.@(jpg|jpeg|gif|png|svg|ico|webp)",
+        "source": "**/*.css",
         "headers": [
           {
-            "key": "Cache-Control",
-            "value": "max-age=7776000"
+            "key": "Content-Type",
+            "value": "text/css"
           }
         ]
       },
@@ -52,35 +144,37 @@
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "public, max-age=300, s-maxage=600"
+            "value": "public, max-age=3600"
           }
         ]
       },
       {
-        "source": "**",
+        "source": "**/*.@(jpg|jpeg|gif|png|svg|webp|ico)",
         "headers": [
           {
-            "key": "X-Content-Type-Options",
-            "value": "nosniff"
-          },
-          {
-            "key": "X-Frame-Options",
-            "value": "SAMEORIGIN"
-          },
-          {
-            "key": "X-XSS-Protection",
-            "value": "1; mode=block"
+            "key": "Cache-Control",
+            "value": "public, max-age=86400"
           }
         ]
       }
-    ],
-    "trailingSlash": false,
-    "cleanUrls": false
+    ]
   },
-  "functions": {
-    "source": "functions",
-    "runtime": "nodejs18"
-  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run lint"
+      ]
+    }
+  ],
   "firestore": {
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"

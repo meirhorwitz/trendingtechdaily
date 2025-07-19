@@ -1,7 +1,7 @@
 // functions/http/legacy.js
 
-const fetch = require('node-fetch');
-const { logger } = require('../config');
+const fetch = require("node-fetch");
+const { logger } = require("../config");
 
 /**
  * A helper function to generate mock stock data on API failure.
@@ -21,8 +21,8 @@ function generateMockStockData(symbol) {
         regularMarketChange: change,
         regularMarketChangePercent: changePercent,
         regularMarketPreviousClose: basePrice - change,
-      }]
-    }
+      }],
+    },
   };
 }
 
@@ -33,11 +33,11 @@ async function yahooFinance(req, res) {
   try {
     const symbol = req.path.slice(1) || req.query.symbol;
     if (!symbol) {
-      return res.status(400).json({ error: 'Stock symbol is required' });
+      return res.status(400).json({ error: "Stock symbol is required" });
     }
     logger.info(`(Legacy) Fetching Yahoo Finance data for symbol: ${symbol}`);
     const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}`;
-    const headers = { 'User-Agent': 'Mozilla/5.0' }; // Simple user-agent
+    const headers = { "User-Agent": "Mozilla/5.0" }; // Simple user-agent
     
     const response = await fetch(url, { headers });
     if (!response.ok) {
@@ -48,10 +48,10 @@ async function yahooFinance(req, res) {
     return res.status(200).json(data);
 
   } catch (error) {
-    logger.error('(Legacy) Error fetching stock data:', error.message);
+    logger.error("(Legacy) Error fetching stock data:", error.message);
     const symbol = req.path.slice(1) || req.query.symbol;
     const mockData = generateMockStockData(symbol);
-    logger.warn('(Legacy) Returning mock data as fallback');
+    logger.warn("(Legacy) Returning mock data as fallback");
     return res.status(200).json(mockData);
   }
 }
@@ -63,7 +63,7 @@ async function yahooFinanceHistory(req, res) {
   try {
     const symbol = req.path.slice(1) || req.query.symbol;
     if (!symbol) {
-      return res.status(400).json({ error: 'Stock symbol is required' });
+      return res.status(400).json({ error: "Stock symbol is required" });
     }
     logger.info(`(Legacy) Fetching Yahoo Finance history for symbol: ${symbol}`);
     
@@ -73,23 +73,23 @@ async function yahooFinanceHistory(req, res) {
     const interval = req.query.interval || "1d";
     
     const url = `https://query1.finance.yahoo.com/v7/finance/chart/${symbol}?period1=${period1}&period2=${period2}&interval=${interval}&indicators=quote&includeTimestamps=true`;
-    const headers = { 'User-Agent': 'Mozilla/5.0' };
+    const headers = { "User-Agent": "Mozilla/5.0" };
 
     const response = await fetch(url, { headers });
     if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Yahoo Finance API error (${response.status}): ${errorText}`);
+      const errorText = await response.text();
+      throw new Error(`Yahoo Finance API error (${response.status}): ${errorText}`);
     }
     const data = await response.json();
     return res.status(200).json(data);
 
   } catch (error) {
-    logger.error('(Legacy) Error fetching stock history data:', error.message);
+    logger.error("(Legacy) Error fetching stock history data:", error.message);
     return res.status(500).json({ error: error.message });
   }
 }
 
 module.exports = {
   yahooFinance,
-  yahooFinanceHistory
+  yahooFinanceHistory,
 };

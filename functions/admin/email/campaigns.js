@@ -1,7 +1,7 @@
 // campaigns.js
 const { onCall, HttpsError } = require("firebase-functions/v2/https"); // Import v2 onCall and HttpsError
-const admin = require('./admin'); // Import the initialized admin SDK
-const db = require('./db'); // Import the initialized Firestore instance
+const admin = require("./admin"); // Import the initialized admin SDK
+const db = require("./db"); // Import the initialized Firestore instance
 const logger = require("firebase-functions/logger"); // Import v2 logger
 
 // Create or update a campaign
@@ -26,18 +26,18 @@ const saveCampaignHandler = async (request) => {
       subject,
       templateId,
       listIds,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
     
     // Handle scheduling
     if (scheduleNow) {
-      campaignData.status = 'scheduled';
+      campaignData.status = "scheduled";
       campaignData.scheduledFor = admin.firestore.FieldValue.serverTimestamp(); // Let Firestore set the time
     } else if (scheduledForISO) {
-      campaignData.status = 'scheduled';
+      campaignData.status = "scheduled";
       campaignData.scheduledFor = admin.firestore.Timestamp.fromDate(new Date(scheduledForISO));
     } else {
-      campaignData.status = 'draft';
+      campaignData.status = "draft";
       campaignData.scheduledFor = admin.firestore.FieldValue.delete(); // Clear if it's a draft
     }
     
@@ -55,7 +55,7 @@ const saveCampaignHandler = async (request) => {
         opened: 0,
         clicked: 0,
         bounced: 0,
-        unsubscribed: 0
+        unsubscribed: 0,
       };
       
       const docRef = await db.collection("campaigns").add(campaignData);
@@ -79,7 +79,7 @@ const getCampaignsHandler = async (request) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
-      "You must be logged in to access email campaigns."
+      "You must be logged in to access email campaigns.",
     );
   }
   
@@ -93,7 +93,7 @@ const getCampaignsHandler = async (request) => {
     campaignsSnapshot.forEach(doc => {
       campaigns.push({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       });
     });
     
@@ -113,7 +113,7 @@ const getCampaignHandler = async (request) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
-      "You must be logged in to access email campaigns."
+      "You must be logged in to access email campaigns.",
     );
   }
   
@@ -132,7 +132,7 @@ const getCampaignHandler = async (request) => {
     
     return {
       id: campaignDoc.id,
-      ...campaignDoc.data()
+      ...campaignDoc.data(),
     };
   } catch (error) {
     logger.error("Error getting campaign:", error);
@@ -149,7 +149,7 @@ const deleteCampaignHandler = async (request) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
-      "You must be logged in to manage email campaigns."
+      "You must be logged in to manage email campaigns.",
     );
   }
   
@@ -170,10 +170,10 @@ const deleteCampaignHandler = async (request) => {
     const campaign = campaignDoc.data();
     
     // Check if the campaign can be deleted
-    if (campaign.status === 'sending' || campaign.status === 'sent') {
+    if (campaign.status === "sending" || campaign.status === "sent") {
       throw new functions.https.HttpsError(
         "failed-precondition",
-        "Cannot delete a campaign that has been sent or is in progress"
+        "Cannot delete a campaign that has been sent or is in progress",
       );
     }
     
@@ -209,7 +209,7 @@ const scheduleCampaignHandler = async (request) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
-      "You must be logged in to manage email campaigns."
+      "You must be logged in to manage email campaigns.",
     );
   }
   
@@ -234,10 +234,10 @@ const scheduleCampaignHandler = async (request) => {
     const campaign = campaignDoc.data();
     
     // Check if the campaign can be scheduled
-    if (campaign.status !== 'draft') {
+    if (campaign.status !== "draft") {
       throw new functions.https.HttpsError(
         "failed-precondition",
-        "Only draft campaigns can be scheduled"
+        "Only draft campaigns can be scheduled",
       );
     }
     
@@ -246,9 +246,9 @@ const scheduleCampaignHandler = async (request) => {
     
     // Update campaign status
     await db.collection("campaigns").doc(campaignId).update({
-      status: 'scheduled',
+      status: "scheduled",
       scheduledFor: scheduledTimestamp,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
     
     return { success: true };
@@ -267,7 +267,7 @@ const cancelCampaignHandler = async (request) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
-      "You must be logged in to manage email campaigns."
+      "You must be logged in to manage email campaigns.",
     );
   }
   
@@ -288,18 +288,18 @@ const cancelCampaignHandler = async (request) => {
     const campaign = campaignDoc.data();
     
     // Check if the campaign can be canceled
-    if (campaign.status !== 'scheduled') {
+    if (campaign.status !== "scheduled") {
       throw new functions.https.HttpsError(
         "failed-precondition",
-        "Only scheduled campaigns can be canceled"
+        "Only scheduled campaigns can be canceled",
       );
     }
     
     // Update campaign status
     await db.collection("campaigns").doc(campaignId).update({
-      status: 'draft',
+      status: "draft",
       scheduledFor: admin.firestore.FieldValue.delete(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
     
     // Delete scheduled tasks for this campaign
@@ -329,35 +329,35 @@ const cancelCampaignHandler = async (request) => {
 // Process a campaign send (called by scheduler)
 // Process a campaign send (called via HTTP endpoint)
 // NOTE: This is an onRequest function, its definition is in sending.js
-exports.processCampaignSend = require('./sending').processCampaignSend; // Assuming this is now in sending.js
+exports.processCampaignSend = require("./sending").processCampaignSend; // Assuming this is now in sending.js
 
 // Export the v2 callable functions
 exports.saveCampaign = onCall(
-  { region: 'us-central1' }, // Add region if not globally set
-  saveCampaignHandler
+  { region: "us-central1" }, // Add region if not globally set
+  saveCampaignHandler,
 );
 
 exports.getCampaigns = onCall(
-  { region: 'us-central1' },
-  getCampaignsHandler
+  { region: "us-central1" },
+  getCampaignsHandler,
 );
 
 exports.getCampaign = onCall(
-  { region: 'us-central1' },
-  getCampaignHandler
+  { region: "us-central1" },
+  getCampaignHandler,
 );
 
 exports.deleteCampaign = onCall(
-  { region: 'us-central1' },
-  deleteCampaignHandler
+  { region: "us-central1" },
+  deleteCampaignHandler,
 );
 
 exports.scheduleCampaign = onCall(
-  { region: 'us-central1' },
-  scheduleCampaignHandler
+  { region: "us-central1" },
+  scheduleCampaignHandler,
 );
 
 exports.cancelCampaign = onCall(
-  { region: 'us-central1' },
-  cancelCampaignHandler
+  { region: "us-central1" },
+  cancelCampaignHandler,
 );

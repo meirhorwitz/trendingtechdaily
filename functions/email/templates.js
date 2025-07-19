@@ -1,7 +1,7 @@
 // functions/email/templates.js
 
-const { db, logger } = require('../config');
-const { HttpsError } = require('firebase-functions/v2/https');
+const { db, logger } = require("../config");
+const { HttpsError } = require("firebase-functions/v2/https");
 
 // --- Placeholder Implementations ---
 // TODO: Replace these with your actual logic.

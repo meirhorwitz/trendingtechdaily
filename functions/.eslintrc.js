@@ -1,10 +1,15 @@
 module.exports = {
+  root: true,
   env: {
     es6: true,
     node: true,
   },
+  ignorePatterns: [
+    "mcp-demo/**", // Ignore the mcp-demo directory
+  ],
   parserOptions: {
-    "ecmaVersion": 2018,
+    ecmaVersion: 2022, // Updated to support top-level await
+    sourceType: "module",
   },
   extends: [
     "eslint:recommended",
@@ -18,7 +23,13 @@ module.exports = {
     "max-len": "off",
     "require-jsdoc": "off",
     "comma-dangle": "off",
-    "no-undef": "warn"
+    "no-undef": "warn",
+    "no-unused-vars": "off",
+    "no-console": "off",
+    "object-curly-spacing": "off",
+    "space-before-function-paren": "off",
+    "prefer-const": "warn",
+    "no-var": "error",
   },
   overrides: [
     {
@@ -30,13 +41,6 @@ module.exports = {
     },
   ],
   globals: {
-    CONFIG: "writable"
+    CONFIG: "writable",
   },
-};
-module.exports = {
-  // ... existing rules
-  rules: {
-    "no-unused-vars": "off",
-    // Other rules...
-  }
 };

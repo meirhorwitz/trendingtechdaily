@@ -1,7 +1,7 @@
 // functions/callable/admin.js
 
 const { HttpsError } = require("firebase-functions/v2/https");
-const { admin, db, logger } = require('../config');
+const { admin, db, logger } = require("../config");
 
 /**
  * A callable function to set a custom 'admin' claim on a user.
@@ -11,13 +11,13 @@ const { admin, db, logger } = require('../config');
 async function createAdmin(request) {
   // Check if the caller is authenticated.
   if (!request.auth) {
-    throw new HttpsError('unauthenticated', 'The function must be called while authenticated.');
+    throw new HttpsError("unauthenticated", "The function must be called while authenticated.");
   }
   
   // The UID of the user to make an admin. Can be passed in data or defaults to the caller's UID.
   const uid = request.data.uid || request.auth.uid;
   if (!uid) {
-    throw new HttpsError('invalid-argument', 'User UID is required.');
+    throw new HttpsError("invalid-argument", "User UID is required.");
   }
 
   try {
@@ -31,11 +31,11 @@ async function createAdmin(request) {
     await admin.auth().setCustomUserClaims(uid, { admin: true });
 
     // For easier querying, also set a role in Firestore.
-    await db.collection('users').doc(uid).set({
+    await db.collection("users").doc(uid).set({
       email,
-      role: 'admin',
+      role: "admin",
       isAdmin: true,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     }, { merge: true });
 
     logger.info(`Admin claim set successfully for user: ${uid}`);
@@ -43,10 +43,10 @@ async function createAdmin(request) {
     
   } catch (error) {
     logger.error(`Error creating admin for UID ${uid}:`, error);
-    throw new HttpsError('internal', 'An internal error occurred while setting the admin claim.', error.message);
+    throw new HttpsError("internal", "An internal error occurred while setting the admin claim.", error.message);
   }
 }
 
 module.exports = {
-  createAdmin
+  createAdmin,
 };

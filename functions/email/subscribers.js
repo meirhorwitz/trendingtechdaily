@@ -1,7 +1,7 @@
 // functions/email/subscribers.js
 
-const { db, logger } = require('../config');
-const { HttpsError } = require('firebase-functions/v2/https');
+const { db, logger } = require("../config");
+const { HttpsError } = require("firebase-functions/v2/https");
 // For CSV handling, you might need libraries like 'csv-parser' and 'csv-writer'
 // const csv = require('csv-parser');
 // const { createObjectCsvWriter } = require('csv-writer');

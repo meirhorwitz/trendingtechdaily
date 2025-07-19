@@ -1,30 +1,30 @@
 // functions/services/newsService.js
 
-const fetch = require('node-fetch');
-const { db, admin, logger, CONFIG } = require('../config');
-const { getSafe } = require('../utils');
-const { saveToFirestore } = require('./firestoreService');
+const fetch = require("node-fetch");
+const { db, admin, logger, CONFIG } = require("../config");
+const { getSafe } = require("../utils");
+const { saveToFirestore } = require("./firestoreService");
 
 // --- START: Individual Fetcher Functions ---
 
 async function fetchAINews(apiKey) {
-    // ... (Your full fetchAINews function code here)
+  // ... (Your full fetchAINews function code here)
 }
 
 async function fetchGadgetsNews() {
-    // ... (Your full fetchGadgetsNews function code here)
+  // ... (Your full fetchGadgetsNews function code here)
 }
 
 async function fetchStartupsNews() {
-    // ... (Your full fetchStartupsNews function code here)
+  // ... (Your full fetchStartupsNews function code here)
 }
 
 async function fetchCryptoNews() {
-    // ... (Your full fetchCryptoNews function code here)
+  // ... (Your full fetchCryptoNews function code here)
 }
 
 async function fetchStockData() {
-    // ... (Your full fetchStockData function code here)
+  // ... (Your full fetchStockData function code here)
 }
 
 // --- END: Individual Fetcher Functions ---
@@ -41,15 +41,15 @@ async function fetchAllNews(apiKeys = {}) {
     fetchGadgetsNews(),
     fetchStartupsNews(),
     fetchCryptoNews(),
-    fetchStockData()
+    fetchStockData(),
   ];
 
   const results = await Promise.allSettled(newsPromises);
 
   results.forEach((result, index) => {
-    if (result.status === 'rejected') {
+    if (result.status === "rejected") {
       // Log the specific task that failed.
-      const taskName = ['AI', 'Gadgets', 'Startups', 'Crypto', 'Stocks'][index];
+      const taskName = ["AI", "Gadgets", "Startups", "Crypto", "Stocks"][index];
       logger.error(`Error in background fetch for ${taskName}:`, result.reason);
     }
   });

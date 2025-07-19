@@ -5,44 +5,38 @@ const { logger, db, CONFIG } = require('../config');
 const { loadGeminiSDK, getSafetySettings, getSafe, getGeminiSDK, getStockMappingCacheDuration } = require('../utils');
 const fetch = require('node-fetch');
 
-// --- Helper function to get relevant stock images based on keywords ---
+// --- Helper function to get fallback colors for SVG generation ---
 function getFallbackImagesForCategory(prompt = "") {
+  // This function now returns color schemes instead of image URLs
   const promptLower = prompt.toLowerCase();
-  const imageCategories = CONFIG.fallbackImages ? {
-      ai: [CONFIG.fallbackImages.AI || "https://images.unsplash.com/photo-1677442135394-633f44004c86?w=1200&q=80"],
-      gadgets: [CONFIG.fallbackImages.Gadgets || "https://images.unsplash.com/photo-1526570207772-2a4269e3ac40?w=1200&q=80"],
-      startups: [CONFIG.fallbackImages.Startups || "https://images.unsplash.com/photo-1661956602116-661d5c25f9f4?w=1200&q=80"],
-      crypto: [CONFIG.fallbackImages.Crypto || "https://images.unsplash.com/photo-1640340002902-a0588c2a6f38?w=1200&q=80"],
-      blockchain: [ CONFIG.fallbackImages.Crypto || "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=1200&q=80"],
-      cybersecurity: ["https://images.unsplash.com/photo-1614064641938-3bbbc90f9e36?w=1200&q=80"],
-      cloud: ["https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=1200&q=80"],
-      data: ["https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&q=80"],
-      mobile: ["https://images.unsplash.com/photo-1598128558393-70ff0c39a29d?w=1200&q=80"],
-      default: [CONFIG.fallbackImages.default || "https://images.unsplash.com/photo-1488590528505-98fb2e5ea1c4?w=1200&q=80"]
-  } : { 
-      default: ["https://images.unsplash.com/photo-1488590528505-98fb2e5ea1c4?w=1200&q=80"]
-  };
   
-  for (const [category, images] of Object.entries(imageCategories)) {
-    if (category !== 'default' && promptLower.includes(category)) return images;
+  if (promptLower.includes('ai') || promptLower.includes('artificial intelligence') || promptLower.includes('machine learning')) {
+    return ['#4F46E5', '#7C3AED']; // Purple gradient
+  } else if (promptLower.includes('crypto') || promptLower.includes('blockchain') || promptLower.includes('bitcoin')) {
+    return ['#F59E0B', '#EF4444']; // Orange-red gradient
+  } else if (promptLower.includes('cyber') || promptLower.includes('security') || promptLower.includes('privacy')) {
+    return ['#10B981', '#059669']; // Green gradient
+  } else if (promptLower.includes('cloud') || promptLower.includes('server') || promptLower.includes('infrastructure')) {
+    return ['#06B6D4', '#0891B2']; // Cyan gradient
+  } else if (promptLower.includes('data') || promptLower.includes('analytics') || promptLower.includes('database')) {
+    return ['#3B82F6', '#1E40AF']; // Blue gradient
+  } else if (promptLower.includes('mobile') || promptLower.includes('app') || promptLower.includes('smartphone')) {
+    return ['#8B5CF6', '#6366F1']; // Purple-indigo gradient
+  } else if (promptLower.includes('startup') || promptLower.includes('entrepreneur') || promptLower.includes('innovation')) {
+    return ['#EC4899', '#BE185D']; // Pink gradient
+  } else if (promptLower.includes('robot') || promptLower.includes('automation')) {
+    return ['#6B7280', '#374151']; // Gray gradient
+  } else if (promptLower.includes('quantum')) {
+    return ['#7C3AED', '#4C1D95']; // Deep purple gradient
+  } else if (promptLower.includes('network') || promptLower.includes('5g')) {
+    return ['#14B8A6', '#0D9488']; // Teal gradient
   }
-  const techKeywords = {
-    'artificial intelligence': imageCategories.ai || imageCategories.default,
-    'machine learning': imageCategories.ai || imageCategories.default,
-    'crypto': imageCategories.blockchain || imageCategories.default,
-    'bitcoin': imageCategories.blockchain || imageCategories.default,
-    'security': imageCategories.cybersecurity || imageCategories.default,
-    'cloud': imageCategories.cloud || imageCategories.default,
-    'analytics': imageCategories.data || imageCategories.default,
-    'smartphone': imageCategories.mobile || imageCategories.default,
-  };
-  for (const [keyword, images] of Object.entries(techKeywords)) {
-    if (promptLower.includes(keyword)) return images;
-  }
-  return imageCategories.default;
+  
+  // Default technology gradient
+  return ['#6366F1', '#4F46E5']; // Indigo-purple gradient
 }
 
-// --- generateArticleContent (Implemented Version from previous step) ---
+// --- generateArticleContent (robust JSON parsing for code blocks) ---
 async function generateArticleContent(request) { // request contains { auth, data }
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "Authentication required.");
@@ -110,22 +104,28 @@ Generate the article about: "${topic}". Output ONLY the JSON object.
       let errorMessage = "";
 
       try {
-        let jsonText = rawTextResponse;
+        // Robustly extract JSON from code block or plain text
+        let jsonText = rawTextResponse.trim();
+        
+        // Remove markdown code blocks
         if (jsonText.includes('```json')) {
-            jsonText = jsonText.replace(/^```json\s*/, '');
-            jsonText = jsonText.replace(/\s*```\s*$/, '');
-        } else if (jsonText.startsWith('```') && jsonText.endsWith('```')) {
-             jsonText = jsonText.substring(3, jsonText.length - 3).trim();
+            jsonText = jsonText.replace(/```json\s*/g, '');
+            jsonText = jsonText.replace(/\s*```/g, '');
+        } else if (jsonText.includes('```')) {
+            jsonText = jsonText.replace(/```\s*/g, '');
         }
-        const jsonMatch = jsonText.match(/(\{[\s\S]*\})/);
+        
+        // Try to find JSON object
+        const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
         if (!jsonMatch || !jsonMatch[0]) {
           throw new Error("No valid JSON object found in AI response.");
         }
+        
         generatedJson = JSON.parse(jsonMatch[0]);
         logger.info("generateArticleContent: Successfully parsed JSON from Gemini response.");
       } catch (parseError) {
         parseErrorOccurred = true;
-        errorMessage = "AI response was not valid JSON. Raw: " + rawTextResponse.substring(0,100);
+        errorMessage = "AI response was not valid JSON. Parse error: " + parseError.message;
         logger.error("generateArticleContent: Failed to parse JSON.", parseError, "Raw Text:", rawTextResponse);
       }
 
@@ -168,103 +168,222 @@ async function rephraseText(request) {
     return { rephrasedText: `Rephrased: ${request.data.text} (placeholder)` };
 }
 
-// --- suggestArticleTopic (Placeholder - Implement your logic) ---
-async function suggestArticleTopic(request) { 
+// --- suggestArticleTopic (Enhanced with better randomization) ---
+async function suggestArticleTopic(request) {
     if (!request.auth) throw new HttpsError("unauthenticated", "Authentication required.");
-    // TODO: Implement your suggestArticleTopic logic using Gemini
-    return { topic: "Placeholder: AI-suggested Article Topic", reason: "This is a compelling topic because..." };
+    const GROK_API_KEY = process.env.GROK_API_KEY;
+    if (!GROK_API_KEY) throw new HttpsError("internal", "GROK_API_KEY secret is not configured.");
+    
+    // Enhanced randomization with timestamp and longer random string
+    const timestamp = Date.now();
+    const randomizer = Math.random().toString(36).substring(2, 15);
+    const userPrompt = request.data && request.data.prompt ? request.data.prompt : "trending technology";
+    
+    // Create a more dynamic prompt
+    const prompt = `${userPrompt} [timestamp:${timestamp}] [session:${randomizer}] [unique:${Math.random()}]`;
+    
+    try {
+        const grokResponse = await fetch("https://api.x.ai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${GROK_API_KEY}`
+            },
+            body: JSON.stringify({
+                model: "grok-3-latest",
+                messages: [
+                    { 
+                        role: "system", 
+                        content: `You are an expert tech journalist assistant. Each time you are asked, suggest a COMPLETELY DIFFERENT, unique, and trending article topic for a technology news site. 
+                        IMPORTANT: Never repeat topics. Be creative and explore different areas of tech each time.
+                        Consider: AI/ML, cybersecurity, blockchain, quantum computing, biotech, space tech, consumer electronics, software development, tech policy, startups, etc.
+                        Current timestamp: ${new Date().toISOString()}
+                        Respond with a JSON object: { topic: string, reason: string }` 
+                    },
+                    { 
+                        role: "user", 
+                        content: prompt 
+                    }
+                ],
+                stream: false,
+                temperature: 1.2,  // Increased from 0.8 for more randomness
+                max_tokens: 200,
+                top_p: 0.95  // Added for more diversity
+            })
+        });
+        
+        if (!grokResponse.ok) {
+            throw new Error(`Grok API error: ${grokResponse.status} ${await grokResponse.text()}`);
+        }
+        
+        const data = await grokResponse.json();
+        const content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+        let topic = "";
+        let reason = "";
+        
+        if (content) {
+            try {
+                // Robustly extract JSON from code block or plain text
+                let jsonText = content;
+                if (jsonText.includes('```json')) {
+                    jsonText = jsonText.replace(/^```json\s*/, '');
+                    jsonText = jsonText.replace(/\s*```\s*$/, '');
+                } else if (jsonText.startsWith('```') && jsonText.endsWith('```')) {
+                    jsonText = jsonText.substring(3, jsonText.length - 3).trim();
+                }
+                const jsonMatch = jsonText.match(/(\{[\s\S]*\})/);
+                if (!jsonMatch || !jsonMatch[0]) {
+                    throw new Error("No valid JSON object found in AI response.");
+                }
+                const parsed = JSON.parse(jsonMatch[0]);
+                topic = parsed.topic;
+                reason = parsed.reason;
+            } catch (e) {
+                // If not valid JSON, fallback to plain text
+                topic = content;
+                reason = "";
+            }
+        }
+        
+        logger.info(`Suggested topic: "${topic}" with randomizer: ${randomizer}`);
+        return { topic, reason };
+    } catch (error) {
+        logger.error("Grok API error:", error);
+        throw new HttpsError("internal", `Grok API failed: ${error.message}`);
+    }
 }
 
-// --- generateArticleImage (Logic Order UPDATED) ---
+// --- generateArticleImage (Gemini-only with generated placeholder) ---
 async function generateArticleImage(request) {
     if (!request.auth) {
-      throw new HttpsError("unauthenticated", "Authentication required.");
+        throw new HttpsError("unauthenticated", "Authentication required.");
     }
     
     const { prompt, articleTitle = '', style = 'tech_illustration' } = request.data;
     
     if (!prompt || typeof prompt !== 'string' || prompt.trim() === '') {
-      throw new HttpsError("invalid-argument", "A non-empty 'prompt' string is required.");
+        throw new HttpsError("invalid-argument", "A non-empty 'prompt' string is required.");
     }
+    
     logger.info(`generateArticleImage called for prompt: "${prompt}", title: "${articleTitle}"`);
 
     let imageUrl = '';
-    let imageAltText = `Image for: ${articleTitle || prompt}`; // Default alt text
-    let source = 'unknown';
+    let imageAltText = `${articleTitle || prompt} - Technology illustration`;
+    let source = 'gemini-generated';
     let message = '';
-    // let enhancedPrompts = null; // Kept if you plan to use Gemini for prompt enhancement later
 
-    // --- NEW ORDER ---
-    // Option 1: Try AI-suggested Fallback first (using getFallbackImagesForCategory)
-    logger.info("Attempting AI-suggested fallback image first...");
-    const fallbackImages = getFallbackImagesForCategory(prompt); // Array of URLs
-    if (fallbackImages && fallbackImages.length > 0) {
-        imageUrl = fallbackImages[0]; // Take the first one
-        imageAltText = `Suggested stock image for: ${prompt}`; // More specific alt text
-        source = 'ai_keyword_fallback';
-        logger.info("Using AI-suggested fallback image (from predefined categories):", imageUrl);
-        message = "Used an AI-suggested stock image based on your prompt.";
-    } else {
-        logger.warn("No suitable image found from AI-suggested fallback categories for prompt:", prompt);
-    }
-
-    // Option 2: If AI-suggested fallback didn't provide an image, try Unsplash API
-    if (!imageUrl) {
-      const unsplashKey = process.env.UNSPLASH_ACCESS_KEY;
-      if (unsplashKey) {
-        logger.info("AI-suggested fallback failed or not found, trying Unsplash...");
-        const searchQuery = encodeURIComponent(prompt);
-        try {
-          const unsplashResponse = await fetch(
-            `https://api.unsplash.com/search/photos?query=${searchQuery}&orientation=landscape&per_page=1`,
-            { headers: { 'Authorization': `Client-ID ${unsplashKey}` } }
-          );
-          
-          if (unsplashResponse.ok) {
-            const unsplashData = await unsplashResponse.json();
-            if (unsplashData.results && unsplashData.results.length > 0) {
-              const img = unsplashData.results[0];
-              imageUrl = img.urls.regular;
-              imageAltText = img.description || img.alt_description || `Stock photo from Unsplash for: ${prompt}`;
-              source = 'unsplash';
-              logger.info("Image successfully fetched from Unsplash:", imageUrl);
-              message = "Fetched an image from Unsplash.";
-            } else {
-              logger.warn("No results from Unsplash for prompt:", prompt);
-            }
-          } else {
-            logger.error(`Unsplash API error ${unsplashResponse.status}:`, await unsplashResponse.text());
-          }
-        } catch (unsplashError) {
-          logger.error("Error calling Unsplash API:", unsplashError);
+    try {
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey) {
+            logger.error("generateArticleImage: GEMINI_API_KEY is not configured.");
+            throw new HttpsError("internal", "GEMINI API Key not configured.");
         }
-      } else {
-        logger.warn("UNSPLASH_ACCESS_KEY not configured. Skipping Unsplash.");
-      }
-    }
-    
-    // Final Fallback: If no image URL found yet, use a default from CONFIG
-    if (!imageUrl) {
-      logger.warn("No image found from AI fallback or Unsplash, using default image.");
-      const defaultFallbacks = getFallbackImagesForCategory('default'); 
-      if (defaultFallbacks && defaultFallbacks.length > 0) {
-          imageUrl = defaultFallbacks[0];
-      } else {
-          // Absolute last resort if CONFIG.fallbackImages.default is somehow missing
-          imageUrl = "[https://via.placeholder.com/800x400.png?text=Image+Not+Available](https://via.placeholder.com/800x400.png?text=Image+Not+Available)"; 
-      }
-      imageAltText = "Default fallback image";
-      source = 'default_fallback';
-      message = message || "No specific image found, using a default fallback.";
+        
+        // Try to use Gemini to generate a base64 encoded SVG or simple image
+        const sdkLoaded = await loadGeminiSDK();
+        const { GoogleGenerativeAI } = getGeminiSDK();
+        
+        if (!sdkLoaded || !GoogleGenerativeAI) {
+            logger.error("GoogleGenerativeAI SDK not loaded.");
+            throw new HttpsError("internal", "Core AI SDK failed to load.");
+        }
+        
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-1.5-flash", 
+            safetySettings: getSafetySettings() 
+        });
+
+        // Ask Gemini to create an SVG image
+        const svgPrompt = `Create a simple SVG image for this article topic: "${prompt}".
+        
+Generate ONLY the SVG code with these requirements:
+- Size: 1200x600 pixels
+- Use abstract shapes and gradients
+- Tech/modern style with blue, purple, or green colors
+- No text in the image
+- Clean, professional appearance
+
+Output ONLY the SVG code starting with <svg and ending with </svg>. No explanation or other text.`;
+
+        try {
+            const result = await model.generateContent(svgPrompt);
+            const response = await result.response;
+            const responseText = response.text();
+            
+            logger.info("Gemini SVG response received");
+            
+            // Extract SVG from response
+            const svgMatch = responseText.match(/<svg[\s\S]*?<\/svg>/i);
+            if (svgMatch) {
+                // Convert SVG to base64
+                const svgString = svgMatch[0];
+                const base64Svg = Buffer.from(svgString).toString('base64');
+                imageUrl = `data:image/svg+xml;base64,${base64Svg}`;
+                source = 'gemini-generated-svg';
+                message = 'Generated SVG image using Gemini';
+                logger.info("Successfully generated SVG image");
+            } else {
+                logger.warn("No SVG found in Gemini response");
+                throw new Error("No SVG in response");
+            }
+            
+        } catch (geminiError) {
+            logger.error("Gemini SVG generation error:", geminiError);
+            
+            // Fallback: Generate a simple gradient image using canvas-like approach
+            logger.info("Using fallback gradient generation");
+            
+            // Create a simple SVG gradient based on the topic
+            const colorPairs = getFallbackImagesForCategory(prompt);
+            
+            // Generate SVG with gradient and pattern
+            const svg = `<svg width="1200" height="600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:${colorPairs[0]};stop-opacity:1" />
+      <stop offset="100%" style="stop-color:${colorPairs[1]};stop-opacity:1" />
+    </linearGradient>
+    <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
+      <path d="M 50 0 L 0 0 0 50" fill="none" stroke="white" stroke-width="1" opacity="0.1"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="600" fill="url(#grad1)" />
+  <rect width="1200" height="600" fill="url(#grid)" />
+  <circle cx="300" cy="200" r="150" fill="white" opacity="0.1" />
+  <circle cx="900" cy="400" r="200" fill="white" opacity="0.05" />
+  <rect x="100" y="250" width="200" height="100" fill="white" opacity="0.05" transform="rotate(45 200 300)" />
+  <polygon points="600,100 700,300 500,300" fill="white" opacity="0.08" />
+</svg>`;
+            
+            const base64Svg = Buffer.from(svg).toString('base64');
+            imageUrl = `data:image/svg+xml;base64,${base64Svg}`;
+            source = 'generated-gradient';
+            message = 'Generated gradient placeholder image';
+        }
+        
+    } catch (error) {
+        logger.error("Image generation error:", error);
+        
+        // Ultimate fallback: Simple colored rectangle
+        const fallbackSvg = `<svg width="1200" height="600" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="600" fill="#4F46E5" />
+  <rect x="50" y="50" width="1100" height="500" fill="#6366F1" opacity="0.5" />
+</svg>`;
+        
+        const base64Svg = Buffer.from(fallbackSvg).toString('base64');
+        imageUrl = `data:image/svg+xml;base64,${base64Svg}`;
+        source = 'fallback-gradient';
+        message = 'Using fallback gradient image';
     }
 
+    // Always return a valid image
     return {
-      success: !!imageUrl, 
-      imageUrl,
-      imageAltText,
-      source,
-      message: message || (imageUrl ? "Image processed." : "Failed to retrieve any image."),
-      // enhancedPrompts // Include if you generate them
+        success: true,
+        imageUrl,
+        imageAltText,
+        source,
+        message
     };
 }
 

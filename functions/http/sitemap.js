@@ -17,10 +17,20 @@ async function serveSitemap(req, res) {
     xml += `<url><loc>${baseUrl}/privacy</loc><changefreq>yearly</changefreq><priority>0.5</priority></url>`;
     xml += `<url><loc>${baseUrl}/terms</loc><changefreq>yearly</changefreq><priority>0.5</priority></url>`;
     
-    // Category pages
-    const categories = ['ai', 'startups', 'cybersecurity', 'blockchain', 'tech', 'market'];
-    categories.forEach(category => {
-      xml += `<url><loc>${baseUrl}/${category}</loc><changefreq>daily</changefreq><priority>0.9</priority></url>`;
+    // Load sections from database and create a map of section IDs to slugs
+    const sectionsSnapshot = await db.collection('sections')
+      .where('active', '==', true)
+      .get();
+    
+    const sectionMap = {};
+    
+    // Add category pages to sitemap
+    sectionsSnapshot.forEach(doc => {
+      const section = doc.data();
+      const slug = getSafe(() => section.slug, doc.id.toLowerCase());
+      sectionMap[doc.id] = slug; // Store for article URL generation
+      
+      xml += `<url><loc>${baseUrl}/${slug}</loc><changefreq>daily</changefreq><priority>0.9</priority></url>`;
     });
     
     // Dynamic article pages
@@ -31,11 +41,16 @@ async function serveSitemap(req, res) {
         .get();
         
     articlesSnap.forEach(doc => {
-      const slug = getSafe(() => doc.data().slug);
-      const category = getSafe(() => doc.data().category, 'tech');
-      const updatedAt = getSafe(() => doc.data().updatedAt?.toDate().toISOString());
-      if (slug) {
-        xml += `<url><loc>${baseUrl}/${category}/${slug}</loc>`;
+      const article = doc.data();
+      const slug = getSafe(() => article.slug);
+      const categoryId = getSafe(() => article.category);
+      const updatedAt = getSafe(() => article.updatedAt?.toDate().toISOString());
+      
+      if (slug && categoryId) {
+        // Use the section slug from our map, fallback to category ID lowercase if not found
+        const categorySlug = sectionMap[categoryId] || categoryId.toLowerCase();
+        
+        xml += `<url><loc>${baseUrl}/${categorySlug}/${slug}</loc>`;
         if (updatedAt) {
           xml += `<lastmod>${updatedAt}</lastmod>`;
         }

@@ -142,51 +142,65 @@ function setupAuthListener() {
 //  This function fetches articles from your internal Firestore collection
 //  and uses the `categoryCache` to display the correct badge.
 // =================================================================
-function loadLatestArticles() {
-    const container = document.getElementById('latest-articles-container');
-    // Exit if the container isn't on the current page (e.g., you're on a category page)
-    if (!container) {
-        return; 
-    }
+function loadLatestArticles(containerId = 'latest-articles') {
+  const container = document.getElementById(containerId);
+  if (!container || typeof db === 'undefined') {
+      console.warn("Container or DB not ready for loadLatestArticles.");
+      return;
+  }
 
-    container.innerHTML = `<div class="spinner-container"><div class="spinner-border" role="status"></div><p>Loading Latest Articles...</p></div>`;
-
-    db.collection('articles')
-      .where('status', '==', 'published')
-      .orderBy('published_at', 'desc')
-      .limit(6) // Adjust the number of articles as needed
+  db.collection('articles')
+      .where('published', '==', true)
+      .orderBy('createdAt', 'desc')
+      .limit(10)
       .get()
       .then(snapshot => {
           if (snapshot.empty) {
-              container.innerHTML = '<p class="text-muted text-center">No articles found.</p>';
+              container.innerHTML = '<p class="text-center">No articles found.</p>';
               return;
           }
 
-          let articlesHtml = '<div class="article-grid">'; // Use a consistent grid layout
+          let articlesHtml = '<div class="articles-grid">';
           snapshot.forEach(doc => {
               const article = { id: doc.id, ...doc.data() };
-              const title = getSafe(() => article.title, 'Untitled Article');
-              const url = `/article.html?id=${article.id}`;
-              const imageUrl = getSafe(() => article.imageUrl);
-              const publishedDate = getSafe(() => new Date(article.published_at.toDate()).toLocaleDateString(), 'N/A');
+              const publishedDate = getSafe(() => new Date(article.createdAt.toDate()).toLocaleDateString(), 'N/A');
               
-              // --- THIS IS THE CORE FIX ---
-              // Use the article's categoryId to look up the name in the cache
-              const categoryId = getSafe(() => article.categoryId);
-              const categoryName = categoryCache[categoryId] || 'Uncategorized'; // Fallback just in case
-
+              // Get category name from cache
+              let categoryName = 'Uncategorized';
+              let categorySlug = 'uncategorized';
+              if (article.category && categoryCache[article.category]) {
+                  if (typeof categoryCache[article.category] === 'object') {
+                      categoryName = categoryCache[article.category].name || 'Uncategorized';
+                      categorySlug = categoryCache[article.category].slug || article.category.toLowerCase();
+                  } else {
+                      categoryName = categoryCache[article.category];
+                      categorySlug = article.category.toLowerCase();
+                  }
+              }
+              
+              const articleSlug = getSafe(() => article.slug, '');
+              const url = articleSlug ? `/${categorySlug}/${articleSlug}` : '#';
+              const title = getSafe(() => article.title, 'Untitled');
+              const imageUrl = getSafe(() => article.featuredImage);
+              
               articlesHtml += `
-                <div class="article-card ${!imageUrl ? 'no-image' : ''}">
-                  <div class="article-image-container ${!imageUrl ? 'no-image' : ''}">
-                    ${imageUrl ? `<div class="category-badge" data-category-id="${categoryId}">${categoryName}</div><a href="${url}"><img src="${imageUrl}" alt="${title}" class="article-image" loading="lazy" onerror="this.parentElement.style.display='none';"></a>` : `<div class="article-placeholder">No Image</div>`}
-                  </div>
-                  <div class="article-content">
-                    <h3 class="article-title"><a href="${url}">${title}</a></h3>
-                    <div class="article-meta">
-                      <span>${publishedDate}</span>
-                    </div>
-                  </div>
-                </div>`;
+                  <div class="article-card ${!imageUrl ? 'no-image' : ''}">
+                      <div class="article-image-container ${!imageUrl ? 'no-image' : ''}">
+                          ${imageUrl ? 
+                              `<div class="category-badge" data-category-id="${article.category}">${categoryName}</div>
+                              <a href="${url}">
+                                  <img src="${imageUrl}" alt="${title}" class="article-image" loading="lazy" 
+                                       onerror="this.parentElement.style.display='none';">
+                              </a>` : 
+                              `<div class="article-placeholder">No Image</div>`}
+                      </div>
+                      <div class="article-content">
+                          <h3 class="article-title"><a href="${url}">${title}</a></h3>
+                          <div class="article-meta">
+                              <span>${publishedDate}</span>
+                          </div>
+                      </div>
+                  </div>`;
           });
           articlesHtml += '</div>';
           container.innerHTML = articlesHtml;
@@ -201,69 +215,81 @@ function loadLatestArticles() {
 // --- MODIFIED DATA LOADING FUNCTIONS ---
 
 // *** MODIFIED: This function now returns its promise ***
-function loadSections() {
-    const categoryNavPlaceholder = document.getElementById('category-nav-placeholder');
-    const footerCategoriesList = document.getElementById('footer-categories-list');
-    const sidebarContainer = document.getElementById('categories-list');
-    
-    // Return the promise chain
-    return db.collection('sections').where('active', '==', true).orderBy('order').limit(10).get()
-      .then(snap => {
-          // ... (all existing logic from the original function's .then() block remains here)
-          let navHTML = '';
-          let footerCategoriesHTML = '';
-          let sideHTML = '';
-          let apiSections = [];
-          if (!snap.empty) {
-              snap.forEach(doc => {
-                  const section = { id: doc.id, ...doc.data() };
-                  const url = `/category.html?slug=${getSafe(() => section.slug, '#')}`;
-                  const name = getSafe(() => section.name, 'Unnamed Section');
-                  navHTML += `<li class="nav-item"><a class="nav-link" href="${url}">${name}</a></li>`;
-                  footerCategoriesHTML += `<li><a href="${url}">${name}</a></li>`;
-                  if (sidebarContainer) sideHTML += `<li><a href="${url}">${name}</a></li>`;
-                  categoryCache[doc.id] = name; // Populate the cache
-                  if (section.api) apiSections.push(section);
-              });
-          }
-          // ... (rest of the logic inside the 'then' block is unchanged)
-          const stockDataUrl = 'https://www.trendingtechdaily.com/stock-data.html';
-          const stockDataLinkText = 'Stock Data';
-          navHTML += `<li class="nav-item"><a class="nav-link" href="${stockDataUrl}">${stockDataLinkText}</a></li>`;
-          footerCategoriesHTML += `<li><a href="${stockDataUrl}">${stockDataLinkText}</a></li>`;
-          if (sidebarContainer) sideHTML += `<li><a href="${stockDataUrl}">${stockDataLinkText}</a></li>`;
 
-          if (categoryNavPlaceholder && navHTML) {
-              const fragment = document.createDocumentFragment();
-              const tempDiv = document.createElement('div');
-              tempDiv.innerHTML = navHTML;
-              while (tempDiv.firstChild) {
-                  fragment.appendChild(tempDiv.firstChild);
-              }
-              categoryNavPlaceholder.parentNode.insertBefore(fragment, categoryNavPlaceholder);
-          }
-          if (footerCategoriesList) footerCategoriesList.innerHTML = footerCategoriesHTML || '<li>No categories found.</li>';
-          if (sidebarContainer) sidebarContainer.innerHTML = sideHTML || '<li>No categories found.</li>';
-          
-          const apiContainer = document.getElementById('api-articles-container');
-          document.getElementById('api-loading-initial')?.remove();
-          if (apiSections.length > 0 && apiContainer) {
-              if (typeof loadAndRenderApiArticles === 'function') {
-                  apiContainer.innerHTML = '';
-                  apiSections.forEach(cat => loadAndRenderApiArticles(cat));
-              } else {
-                  console.error("loadAndRenderApiArticles function is not defined!");
-              }
-          } else if (apiContainer) {
-              apiContainer.innerHTML = ''; // Clear if no API sections
-          }
-      }).catch(error => {
-          console.error('Error loading sections:', error);
-          if (sidebarContainer) sidebarContainer.innerHTML = '<li>Error loading categories</li>';
-          if (footerCategoriesList) footerCategoriesList.innerHTML = '<li>Error loading categories</li>';
-          // Propagate the error to be caught by the caller
-          throw error;
-      });
+// Updated loadSections function for app-base.js that stores full section data
+function loadSections() {
+  const categoryNavPlaceholder = document.getElementById('category-nav-placeholder');
+  const footerCategoriesList = document.getElementById('footer-categories-list');
+  const sidebarContainer = document.getElementById('categories-list');
+  
+  // Return the promise chain
+  return db.collection('sections').where('active', '==', true).orderBy('order').limit(10).get()
+    .then(snap => {
+        let navHTML = '';
+        let footerCategoriesHTML = '';
+        let sideHTML = '';
+        let apiSections = [];
+        
+        if (!snap.empty) {
+            snap.forEach(doc => {
+                const section = { id: doc.id, ...doc.data() };
+                // Use clean URL structure
+                const url = `/${getSafe(() => section.slug, '#')}`;
+                const name = getSafe(() => section.name, 'Unnamed Section');
+                
+                console.log(`Creating nav link for ${name}: ${url}`);
+                
+                navHTML += `<li class="nav-item"><a class="nav-link" href="${url}">${name}</a></li>`;
+                footerCategoriesHTML += `<li><a href="${url}">${name}</a></li>`;
+                if (sidebarContainer) sideHTML += `<li><a href="${url}">${name}</a></li>`;
+                
+                // Store full section data in categoryCache
+                categoryCache[doc.id] = {
+                    name: name,
+                    slug: section.slug
+                };
+                
+                if (section.api) apiSections.push(section);
+            });
+        }
+        
+        // Add stock data link
+        const stockDataUrl = '/stock-data';
+        const stockDataLinkText = 'Stock Data';
+        navHTML += `<li class="nav-item"><a class="nav-link" href="${stockDataUrl}">${stockDataLinkText}</a></li>`;
+        footerCategoriesHTML += `<li><a href="${stockDataUrl}">${stockDataLinkText}</a></li>`;
+        if (sidebarContainer) sideHTML += `<li><a href="${stockDataUrl}">${stockDataLinkText}</a></li>`;
+
+        if (categoryNavPlaceholder && navHTML) {
+            const fragment = document.createDocumentFragment();
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = navHTML;
+            while (tempDiv.firstChild) {
+                fragment.appendChild(tempDiv.firstChild);
+            }
+            categoryNavPlaceholder.parentNode.insertBefore(fragment, categoryNavPlaceholder);
+        }
+        if (footerCategoriesList) footerCategoriesList.innerHTML = footerCategoriesHTML || '<li>No categories found.</li>';
+        if (sidebarContainer) sidebarContainer.innerHTML = sideHTML || '<li>No categories found.</li>';
+        
+        const apiContainer = document.getElementById('api-articles-container');
+        document.getElementById('api-loading-initial')?.remove();
+        if (apiSections.length > 0 && apiContainer) {
+            if (typeof loadAndRenderApiArticles === 'function') {
+                apiContainer.innerHTML = '';
+                apiSections.forEach(cat => loadAndRenderApiArticles(cat));
+            } else {
+                console.error("loadAndRenderApiArticles function is not defined!");
+            }
+        } else if (apiContainer) {
+            apiContainer.innerHTML = ''; // Clear if no API sections
+        }
+    }).catch(error => {
+        console.error('Error loading sections:', error);
+        if (sidebarContainer) sidebarContainer.innerHTML = '<li>Error loading categories</li>';
+        if (footerCategoriesList) footerCategoriesList.innerHTML = '<li>Error loading categories</li>';
+        throw error;
+    });
 }
 
 // ... All other functions (loadSiteSettings, loadRealTimeStockData, renderApiArticles, etc.) remain unchanged ...
@@ -405,46 +431,65 @@ function loadAndRenderApiArticles(category) {
       console.log(`Calling ${functionName} for ${categoryName} with params:`, params);
       const callableFunction = functions.httpsCallable(functionName);
       callableFunction(params)
-        .then(result => { renderApiArticles(category, getSafe(() => result.data.articles, []), sourceApi); })
+        .then(result => { renderApiArticles(categoryName, getSafe(() => result.data.articles, []), category.id); })
         .catch(error => { renderApiError(category, error); });
 }
 
 // --- MOVED FROM INDEX.HTML: Render API Articles ---
-function renderApiArticles(category, articles, sourceApi) {
-      const categoryId = `cat-api-${category.id}`;
-      const categorySection = document.getElementById(categoryId);
-      if (!categorySection) return;
+function renderApiArticles(categoryName, articles, categoryId) {
+  const categorySection = document.getElementById(`cat-api-${categoryId}`);
+  if (!categorySection) {
+      console.error(`Container cat-api-${categoryId} not found`);
+      return;
+  }
 
-      const categoryUrl = `/category.html?slug=${getSafe(() => category.slug, '#')}`;
-      const categoryName = getSafe(() => category.name, 'News');
+  const categoryUrl = `/${getSafe(() => categoryCache[categoryId]?.slug || categoryId, '#')}`;
+  
+  let sectionHtml = `
+      <div class="section-header">
+          <h2 class="section-title">${categoryName}</h2>
+          <a href="${categoryUrl}" class="see-all">See All</a>
+      </div>`;
 
-      let sectionHtml = `<div class="section-header"><h2 class="section-title">${categoryName}</h2><a href="${categoryUrl}" class="see-all">See All</a></div>`;
-      if (!articles || articles.length === 0) { sectionHtml += `<p class="text-center text-muted mt-3">No recent articles found via ${sourceApi} for ${categoryName}.</p>`; }
-      else {
-          sectionHtml += '<div class="article-grid">';
-          articles.slice(0, 3).forEach(article => {
-              const title = getSafe(() => article.title, 'Untitled');
-              let description = getSafe(() => article.description, '');
-              if (description.length > 150) description = description.substring(0, 147) + '...';
-              const url = getSafe(() => article.url, '#');
-              const imageUrl = sourceApi === 'newsapi' ? article.urlToImage : article.image;
-              const publishedDate = article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : 'N/A';
-              const sourceName = getSafe(() => article.source?.name, '');
-              sectionHtml += `
-                <div class="article-card ${!imageUrl ? 'no-image' : ''}">
+  if (articles && articles.length > 0) {
+      sectionHtml += '<div class="articles-grid">';
+      articles.slice(0, 5).forEach(article => {
+          const title = getSafe(() => article.title, 'Untitled');
+          const description = getSafe(() => article.description, '');
+          const url = getSafe(() => article.url, '#');
+          const imageUrl = article.urlToImage || article.image;
+          const publishedDate = article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : 'N/A';
+          const sourceName = getSafe(() => article.source?.name, '');
+          
+          sectionHtml += `
+              <div class="article-card ${!imageUrl ? 'no-image' : ''}">
                   <div class="article-image-container ${!imageUrl ? 'no-image' : ''}">
-                    ${imageUrl ? `<div class="category-badge" data-category="${categoryName}">${categoryName}</div><a href="${url}" target="_blank" rel="noopener noreferrer"><img src="${imageUrl}" alt="${title}" class="article-image" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'article-placeholder\\'>Image Error</div>';"></a>` : `<div class="article-placeholder">No Image</div>`}
+                      ${imageUrl ? 
+                          `<div class="category-badge" data-category="${categoryName}">${categoryName}</div>
+                          <a href="${url}" target="_blank" rel="noopener noreferrer">
+                              <img src="${imageUrl}" alt="${title}" class="article-image" loading="lazy" 
+                                   onerror="this.parentElement.innerHTML='<div class=\\'article-placeholder\\'>Image Error</div>';">
+                          </a>` : 
+                          `<div class="article-placeholder">No Image</div>`}
                   </div>
                   <div class="article-content">
-                    <h3 class="article-title"><a href="${url}" target="_blank" rel="noopener noreferrer">${title}</a></h3>
-                    <p class="article-description">${description || 'No description.'}</p>
-                    <div class="article-meta"><span>${publishedDate}</span>${sourceName ? `<span title="Source: ${sourceName}">Source: ${sourceName.substring(0,15)}${sourceName.length > 15 ? '...': ''}</span>` : ''}</div>
+                      <h3 class="article-title">
+                          <a href="${url}" target="_blank" rel="noopener noreferrer">${title}</a>
+                      </h3>
+                      <p class="article-description">${description || 'No description.'}</p>
+                      <div class="article-meta">
+                          <span>${publishedDate}</span>
+                          ${sourceName ? `<span title="Source: ${sourceName}">Source: ${sourceName.substring(0,15)}${sourceName.length > 15 ? '...': ''}</span>` : ''}
+                      </div>
                   </div>
-                </div>`;
-          });
-          sectionHtml += '</div>';
-      }
-      categorySection.innerHTML = sectionHtml;
+              </div>`;
+      });
+      sectionHtml += '</div>';
+  } else {
+      sectionHtml += '<p class="text-center text-muted">No articles available.</p>';
+  }
+  
+  categorySection.innerHTML = sectionHtml;
 }
 
 // --- MOVED FROM INDEX.HTML: Render API Error ---
@@ -530,37 +575,75 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // 1) Load the navbar HTML into the placeholder,
   // 2) then run site settings, section loader, and stock ticker.
-  function loadNavbarAndDependentContent() {
+// Fixed section of app-base.js - URL construction issue
+// Replace the problematic section in your loadNavbarAndDependentContent function
+
+function loadNavbarAndDependentContent() {
     const placeholder = document.getElementById('navbar-placeholder');
     if (!placeholder) {
-      console.error("Navbar placeholder not found!");
-      return;
+        console.error("Navbar placeholder not found!");
+        return;
     }
+
     fetch('/nav.html')
-      .then(r => {
-        if (!r.ok) throw new Error(`nav.html load failed: ${r.status}`);
-        return r.text();
-      })
-      .then(html => {
-        placeholder.innerHTML = html;
-        console.log("Navbar injected.");
+        .then(response => {
+            if (!response.ok) throw new Error(`nav.html load failed: ${response.status}`);
+            return response.text();
+        })
+        .then(html => {
+            placeholder.innerHTML = html;
+            console.log("Navbar HTML successfully injected.");
 
-        // Highlight the active link
-        const path = window.location.pathname;
-        document.querySelectorAll('#navbar-placeholder .nav-link').forEach(link => {
-          link.classList.toggle('active', new URL(link.href).pathname === path);
+            setupAuthListener(); 
+
+            // Fixed URL construction - handle relative URLs properly
+            const path = window.location.pathname;
+            document.querySelectorAll('#navbar-placeholder .nav-link').forEach(link => {
+                try {
+                    // Check if href exists and is not empty
+                    if (!link.href || link.href.trim() === '') return;
+                    
+                    // For relative URLs, we need to construct the full URL
+                    let linkUrl;
+                    if (link.href.startsWith('http://') || link.href.startsWith('https://')) {
+                        linkUrl = new URL(link.href);
+                    } else if (link.href.startsWith('#')) {
+                        // Skip anchor links
+                        return;
+                    } else {
+                        // Construct full URL from relative path
+                        linkUrl = new URL(link.getAttribute('href'), window.location.origin);
+                    }
+                    
+                    if (linkUrl.pathname === path) {
+                        link.classList.add('active');
+                    }
+                } catch (e) {
+                    console.warn('Error processing nav link:', link.href, e);
+                }
+            });
+
+            // Load dependent functions
+            if (typeof loadSiteSettings === 'function') loadSiteSettings();
+
+            if (typeof loadSections === 'function') {
+                loadSections().then(() => {
+                    console.log("Sections and category cache loaded successfully.");
+                    if (typeof loadLatestArticles === 'function') {
+                        loadLatestArticles();
+                    }
+                }).catch(error => {
+                    console.error("Error during the sequential loading process:", error);
+                });
+            }
+            
+            if (typeof loadRealTimeStockData === 'function') loadRealTimeStockData();
+        })
+        .catch(err => {
+            console.error('Error loading nav.html:', err);
+            placeholder.innerHTML = '<div style="text-align:center; color:red; padding: 1rem;">Failed to load navigation.</div>';
         });
-
-        // Now call our global loaders (defined up above in this file)
-        if (typeof loadSiteSettings === 'function')      loadSiteSettings();
-        if (typeof loadSections     === 'function')      loadSections();
-        if (typeof loadRealTimeStockData === 'function') loadRealTimeStockData();
-      })
-      .catch(err => {
-        console.error('Error loading nav.html:', err);
-        placeholder.innerHTML = '<div class="text-center text-danger">Failed to load navigation.</div>';
-      });
-  }
+}
 
   // Kick it all off
   loadNavbarAndDependentContent();

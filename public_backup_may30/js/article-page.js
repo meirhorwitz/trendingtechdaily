@@ -11,25 +11,35 @@ function getSafe(fn, defaultValue = '') {
 }
 
 // Get article info from URL
+// Get article info from URL
+// Get article info from URL
 function getArticleInfoFromUrl() {
-    const pathParts = window.location.pathname.split('/').filter(part => part && part !== '');
-    console.log('URL path parts:', pathParts);
-    
-    // Check for section-slug/article-slug pattern
-    if (pathParts.length >= 2) {
-        const sectionSlug = pathParts[0];
-        const articleSlug = pathParts[1];
-        
-        console.log('Found section/article URL:', { sectionSlug, articleSlug });
-        return { sectionSlug, articleSlug };
+    // First check if we have routing info from the router
+    const routingInfo = sessionStorage.getItem('articleRouting');
+    if (routingInfo) {
+        sessionStorage.removeItem('articleRouting');
+        return JSON.parse(routingInfo);
     }
     
-    // Legacy fallback for query parameter
-    const urlParams = new URLSearchParams(window.location.search);
-    const slugParam = urlParams.get('slug');
-    if (slugParam) {
-        console.log('Found slug in query params:', slugParam);
-        return { articleSlug: slugParam };
+    // Check current URL structure
+    const pathParts = window.location.pathname.split('/').filter(part => part && part !== '');
+    
+    // Handle direct navigation to article.html (for backwards compatibility)
+    if (window.location.pathname.includes('article.html')) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const slugParam = urlParams.get('slug');
+        if (slugParam) {
+            console.log('Found slug in query params (legacy):', slugParam);
+            return { articleSlug: slugParam };
+        }
+    }
+    
+    // Handle new URL structure: /category/article-slug
+    if (pathParts.length >= 2) {
+        const category = pathParts[0];
+        const slug = pathParts[1];
+        console.log('Found category/article URL:', { category, slug });
+        return { category: category, slug: slug, articleSlug: slug };
     }
     
     console.log('No article info found in URL');
@@ -767,33 +777,3 @@ document.addEventListener('DOMContentLoaded', function() {
         document.title = "Article Not Found | TrendingTechDaily";
     }
 });
-function getArticleInfoFromUrl() {
-    const pathParts = window.location.pathname.split('/').filter(part => part && part !== '');
-    console.log('URL path parts:', pathParts);
-    
-    // Check if it's /article/slug format (from index page)
-    if (pathParts.length === 2 && pathParts[0] === 'article') {
-        console.log('Found /article/slug format');
-        return { articleSlug: pathParts[1] };
-    }
-    
-    // Check for section-slug/article-slug pattern
-    if (pathParts.length >= 2) {
-        const sectionSlug = pathParts[0];
-        const articleSlug = pathParts[1];
-        
-        console.log('Found section/article URL:', { sectionSlug, articleSlug });
-        return { sectionSlug, articleSlug };
-    }
-    
-    // Legacy fallback for query parameter
-    const urlParams = new URLSearchParams(window.location.search);
-    const slugParam = urlParams.get('slug');
-    if (slugParam) {
-        console.log('Found slug in query params:', slugParam);
-        return { articleSlug: slugParam };
-    }
-    
-    console.log('No article info found in URL');
-    return null;
-}

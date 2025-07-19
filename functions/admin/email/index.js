@@ -1,10 +1,10 @@
 //index.js
-const admin = require('firebase-admin');
-const templates = require('./templates');
-const campaigns = require('./campaigns');
-const tracking = require('./tracking');
-const workflows = require('./workflows');
-const sending = require('./sending');
+const admin = require("firebase-admin");
+const templates = require("./templates");
+const campaigns = require("./campaigns");
+const tracking = require("./tracking");
+const workflows = require("./workflows");
+const sending = require("./sending");
 
 // This ensures admin is initialized
 try {
@@ -19,5 +19,5 @@ module.exports = {
   campaigns,
   tracking,
   workflows,
-  sending
+  sending,
 };

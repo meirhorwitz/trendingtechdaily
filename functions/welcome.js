@@ -1,6 +1,6 @@
-const functions = require('firebase-functions');
-const admin = require('firebase-admin');
-const axios = require('axios');
+const functions = require("firebase-functions");
+const admin = require("firebase-admin");
+const axios = require("axios");
 
 // Initialize admin if not already done
 if (!admin.apps.length) {
@@ -35,9 +35,9 @@ exports.sendWelcomeEmail = functions.auth.user().onCreate(async (user) => {
       token: APPS_SCRIPT_SECRET_TOKEN,
       email: userEmail,
       name: userName,
-      uid: userUid
+      uid: userUid,
     }, {
-      headers: { 'Content-Type': 'application/json' }
+      headers: { "Content-Type": "application/json" },
     });
 
     console.log(`Welcome email processed: ${response.status}`);
