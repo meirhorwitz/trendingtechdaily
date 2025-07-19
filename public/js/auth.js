@@ -17,6 +17,8 @@ function initializeAuth() {
     const userProfilePicNav = document.getElementById('user-profile-pic-nav');
     const userNameNav = document.getElementById('user-name-nav');
     const userIconNav = document.getElementById('user-icon-nav');
+    const userProfilePicDropdown = document.getElementById('user-profile-pic-dropdown');
+    const userEmailNav = document.getElementById('user-email-nav');
 
     // Listen for authentication state changes
     auth.onAuthStateChanged(function(user) {
@@ -38,6 +40,12 @@ function initializeAuth() {
                 userProfilePicNav.src = user.photoURL || '/img/default-avatar.png';
                 userProfilePicNav.style.display = 'block';
             }
+            if (userProfilePicDropdown) {
+                userProfilePicDropdown.src = user.photoURL || '/img/default-avatar.png';
+            }
+            if (userEmailNav) {
+                userEmailNav.textContent = user.email || '';
+            }
             if (userIconNav) userIconNav.style.display = 'none';
 
             console.log('User is signed in:', user.uid);
@@ -53,6 +61,12 @@ function initializeAuth() {
             }
             if (userProfilePicNav) {
                 userProfilePicNav.style.display = 'none';
+            }
+            if (userProfilePicDropdown) {
+                userProfilePicDropdown.src = '/img/default-avatar.png';
+            }
+            if (userEmailNav) {
+                userEmailNav.textContent = 'email@example.com';
             }
             if (userIconNav) userIconNav.style.display = 'inline-block';
 
