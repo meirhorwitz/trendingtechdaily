@@ -987,16 +987,20 @@ if (typeof window.articlesManagerInitialized === 'undefined') {
         const imageAltText = document.getElementById('featuredImageAlt').value.trim();
         const content = quillEditorInstance.root.innerHTML;
         const publishedState = isActuallyPublished; // Use the passed parameter
-        const readingTimeMinutes = estimateReadingTime(content);
+        let readingTimeMinutes = estimateReadingTime(content);
 
-        if (!title || quillEditorInstance.getLength() <= 1) {
-            alert("Title and Content are required.");
+        if (!title || (isActuallyPublished && quillEditorInstance.getLength() <= 1)) {
+            alert(isActuallyPublished ? "Title and Content are required." : "Title is required.");
             if(!title) document.getElementById('title').classList.add('is-invalid');
-            if(quillEditorInstance.getLength() <= 1) document.getElementById('editor-container').style.borderColor = 'red';
+            if(isActuallyPublished && quillEditorInstance.getLength() <= 1) document.getElementById('editor-container').style.borderColor = 'red';
             return;
         }
         document.getElementById('title').classList.remove('is-invalid');
         document.getElementById('editor-container').style.borderColor = '#ced4da';
+
+        if (!isActuallyPublished && quillEditorInstance.getLength() <= 1) {
+            readingTimeMinutes = 0;
+        }
 
 
         setButtonLoading(buttonElement.id, true);
@@ -1151,7 +1155,7 @@ if (typeof window.articlesManagerInitialized === 'undefined') {
         };
         try {
             localStorage.setItem('articlePreviewData', JSON.stringify(previewData));
-            window.open('/article-preview.html', '_blank');
+            window.open('/admin/article-preview.html', '_blank');
         } catch (error) {
             console.error("Error saving preview data to localStorage:", error);
             alert("Could not open preview: LocalStorage error.");
