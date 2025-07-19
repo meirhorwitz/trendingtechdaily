@@ -35,6 +35,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Make stock cards clickable
     makeStockCardsClickable();
     initPremarketDrawer();
+
+    // Load latest stock news
+    loadStockNews();
 });
 
 function initStockDataPage() {
@@ -1009,3 +1012,69 @@ async function loadPremarketData(symbols) {
         if (premarketLoader) premarketLoader.style.display = 'none';
     }
 }
+
+// Load latest stock news articles
+async function loadStockNews() {
+    const container = document.getElementById('stock-news-articles');
+    const loadingEl = document.getElementById('stock-news-loading');
+    const errorEl = document.getElementById('stock-news-error');
+
+    if (!container) return;
+
+    if (loadingEl) loadingEl.style.display = 'block';
+    if (errorEl) {
+        errorEl.textContent = '';
+        errorEl.style.display = 'none';
+    }
+
+    try {
+        if (typeof functions === 'undefined') {
+            throw new Error('Functions service not available');
+        }
+
+        const callable = functions.httpsCallable('getNewsApiArticles');
+        const result = await callable({ endpoint: 'everything', query: 'stock market' });
+        const articles = (result.data && result.data.articles) ? result.data.articles : [];
+
+        if (loadingEl) loadingEl.style.display = 'none';
+
+        if (!articles.length) {
+            container.innerHTML = '<p class="text-muted">No recent articles found.</p>';
+            return;
+        }
+
+        container.innerHTML = '';
+        articles.forEach(article => {
+            const col = document.createElement('div');
+            col.className = 'col-md-4 mb-4';
+            const card = document.createElement('div');
+            card.className = 'card h-100';
+            if (article.urlToImage) {
+                const img = document.createElement('img');
+                img.className = 'card-img-top';
+                img.src = article.urlToImage;
+                img.alt = article.title;
+                img.onerror = () => img.remove();
+                card.appendChild(img);
+            }
+            const body = document.createElement('div');
+            body.className = 'card-body';
+            body.innerHTML = `<h5 class="card-title"><a href="${article.url}" target="_blank" rel="noopener noreferrer">${article.title}</a></h5>`;
+            if (article.source && article.source.name) {
+                body.innerHTML += `<p class="card-text small text-muted">${article.source.name}</p>`;
+            }
+            card.appendChild(body);
+            col.appendChild(card);
+            container.appendChild(col);
+        });
+
+    } catch (error) {
+        console.error('Error loading stock news:', error);
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (errorEl) {
+            errorEl.textContent = 'Failed to load news.';
+            errorEl.style.display = 'block';
+        }
+    }
+}
+
