@@ -192,13 +192,9 @@ async function suggestArticleTopic(request) {
             body: JSON.stringify({
                 model: "grok-3-latest",
                 messages: [
-                    { 
-                        role: "system", 
-                        content: `You are an expert tech journalist assistant. Each time you are asked, suggest a COMPLETELY DIFFERENT, unique, and trending article topic for a technology news site. 
-                        IMPORTANT: Never repeat topics. Be creative and explore different areas of tech each time.
-                        Consider: AI/ML, cybersecurity, blockchain, quantum computing, biotech, space tech, consumer electronics, software development, tech policy, startups, etc.
-                        Current timestamp: ${new Date().toISOString()}
-                        Respond with a JSON object: { topic: string, reason: string }` 
+                    {
+                        role: "system",
+                        content: `You are an expert tech journalist assistant. Suggest a fresh and up-to-date technology news topic based on events from the last 24 hours. Never repeat a topic during the session and vary the area of tech discussed. Respond with a JSON object: { topic: string, reason: string }`
                     },
                     { 
                         role: "user", 
@@ -289,9 +285,9 @@ async function generateArticleImage(request) {
         }
         
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-flash", 
-            safetySettings: getSafetySettings() 
+        const model = genAI.getGenerativeModel({
+            model: "gemini-1.5-pro-latest",
+            safetySettings: getSafetySettings()
         });
 
         // Ask Gemini to create an SVG image
@@ -388,10 +384,39 @@ Output ONLY the SVG code starting with <svg and ending with </svg>. No explanati
 }
 
 // --- getStockDataForCompanies (Placeholder - Implement your logic) ---
-async function getStockDataForCompanies(request) { 
+async function getStockDataForCompanies(request) {
     if (!request.auth) throw new HttpsError("unauthenticated", "Authentication required.");
     // TODO: Implement your getStockDataForCompanies logic
     return { stockData: [] };
+}
+
+// --- readArticleAloud using Gemini TTS ---
+async function readArticleAloud(request) {
+    if (!request.auth) throw new HttpsError("unauthenticated", "Authentication required.");
+    const text = request.data && request.data.text;
+    if (!text || typeof text !== 'string' || text.trim() === '') {
+        throw new HttpsError("invalid-argument", "A non-empty 'text' field is required.");
+    }
+
+    try {
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey) throw new HttpsError("internal", "GEMINI_API_KEY not configured.");
+
+        const sdkLoaded = await loadGeminiSDK();
+        const { GoogleGenerativeAI } = getGeminiSDK();
+        if (!sdkLoaded || !GoogleGenerativeAI) throw new HttpsError("internal", "Core AI SDK failed to load.");
+
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: 'tts-1-hd' });
+        const result = await model.generateContent(text, { responseMimeType: 'audio/mp3' });
+        const response = await result.response;
+        const arrayBuffer = await response.arrayBuffer();
+        const base64Audio = Buffer.from(arrayBuffer).toString('base64');
+        return { success: true, audioContent: base64Audio };
+    } catch (err) {
+        logger.error('readArticleAloud error:', err);
+        throw new HttpsError('internal', 'Failed to generate audio');
+    }
 }
 
 module.exports = {
@@ -400,4 +425,5 @@ module.exports = {
   suggestArticleTopic,
   generateArticleImage,
   getStockDataForCompanies,
+  readArticleAloud,
 };
