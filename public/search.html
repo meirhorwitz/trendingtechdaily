@@ -125,7 +125,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-    <script src="/js/config.js"></script>
+    <script src="/js/app-base.js?v=2"></script>
     <script>
 // Inline search.js to avoid loading conflicts
 document.addEventListener('DOMContentLoaded', function() {
@@ -162,7 +162,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Load categories for filter dropdown and mapping
   async function loadCategories() {
     try {
-      const categoriesSnapshot = await db.collection('categories')
+      const categoriesSnapshot = await db.collection('sections')
         .orderBy('name')
         .get();
       

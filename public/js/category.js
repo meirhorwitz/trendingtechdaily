@@ -132,7 +132,8 @@ function loadCategoryArticles(categoryId, categorySlug) {
                 const author = getSafe(() => article.author);
                 const readingTime = getSafe(() => article.readingTimeMinutes);
                 const articleSlug = getSafe(() => article.slug, '');
-                
+                if (!articleSlug) return; // Skip articles without slug
+
                 const articleUrl = `/${categorySlug}/${articleSlug}`;
 
                 articlesHTML += `
