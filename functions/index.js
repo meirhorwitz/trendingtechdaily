@@ -1,6 +1,6 @@
 // functions/index.js
 
-const { onCall, onRequest } = require("firebase-functions/v2/https");
+const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { logger } = require("./config");
 const cors = require("cors")({ origin: true });
@@ -93,6 +93,7 @@ exports.getFinnhubStockData = onCall({ secrets: ["FINNHUB_API_KEY", "GEMINI_API_
 
 // === Scheduled Functions ===
 const { fetchAllNews } = require("./services/newsService");
+const { shouldGenerateArticle, generateArticle } = require("./scheduledArticles");
 exports.scheduledNewsFetch = onSchedule({ schedule: "every 4 hours", region: "us-central1", secrets: ["NEWS_API_KEY"] }, async () => {
   logger.info("Scheduled news fetch triggered.");
   try {
@@ -100,6 +101,32 @@ exports.scheduledNewsFetch = onSchedule({ schedule: "every 4 hours", region: "us
     logger.info("Scheduled news fetch completed successfully.");
   } catch (error) {
     logger.error("Error in scheduled news fetch:", error);
+  }
+});
+
+exports.autoGenerateArticle = onSchedule({ schedule: "every 1 hours", region: "us-central1", secrets: ["NEWS_API_KEY", "GEMINI_API_KEY"] }, async () => {
+  try {
+    const freqEnv = parseInt(process.env.AUTO_ARTICLE_FREQUENCY, 10);
+    const frequency = isNaN(freqEnv) ? 3 : Math.min(Math.max(freqEnv, 1), 3);
+    const shouldRun = await shouldGenerateArticle(frequency);
+    if (!shouldRun) return;
+    await generateArticle(process.env.NEWS_API_KEY);
+    logger.info("Auto-generated tech article successfully.");
+  } catch (error) {
+    logger.error("Error auto-generating article:", error);
+  }
+});
+
+exports.testGenerateArticle = onCall({ secrets: ["NEWS_API_KEY", "GEMINI_API_KEY"], region: "us-central1" }, async (request) => {
+  if (!request.auth || request.auth.token.admin !== true) {
+    throw new HttpsError('permission-denied', 'Admin privileges required');
+  }
+  try {
+    await generateArticle(process.env.NEWS_API_KEY);
+    return { success: true };
+  } catch (error) {
+    logger.error('Error in testGenerateArticle:', error);
+    throw new HttpsError('internal', 'Failed to generate article');
   }
 });
 
