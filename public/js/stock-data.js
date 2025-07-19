@@ -138,12 +138,37 @@ function showSearchSuggestions(query, suggestionsContainer) {
     }
 
     query = query.toUpperCase();
-    
-    // Filter stocks that match the query
-    const matches = STOCK_SYMBOLS.filter(stock => 
-        stock.symbol.includes(query) || 
+
+    const matches = STOCK_SYMBOLS.filter(stock =>
+        stock.symbol.includes(query) ||
         stock.name.toUpperCase().includes(query)
-    );
+    ).sort((a, b) => {
+        const q = query;
+        const aSymbol = a.symbol.toUpperCase();
+        const bSymbol = b.symbol.toUpperCase();
+        const aName = a.name.toUpperCase();
+        const bName = b.name.toUpperCase();
+
+        if (aSymbol === q && bSymbol !== q) return -1;
+        if (bSymbol === q && aSymbol !== q) return 1;
+
+        const aStarts = aSymbol.startsWith(q) || aName.startsWith(q);
+        const bStarts = bSymbol.startsWith(q) || bName.startsWith(q);
+        if (aStarts && !bStarts) return -1;
+        if (bStarts && !aStarts) return 1;
+
+        const aIdx = Math.min(
+            aSymbol.indexOf(q) !== -1 ? aSymbol.indexOf(q) : Number.MAX_VALUE,
+            aName.indexOf(q) !== -1 ? aName.indexOf(q) : Number.MAX_VALUE
+        );
+        const bIdx = Math.min(
+            bSymbol.indexOf(q) !== -1 ? bSymbol.indexOf(q) : Number.MAX_VALUE,
+            bName.indexOf(q) !== -1 ? bName.indexOf(q) : Number.MAX_VALUE
+        );
+        if (aIdx !== bIdx) return aIdx - bIdx;
+
+        return aSymbol.localeCompare(bSymbol);
+    });
 
     if (matches.length > 0) {
         let suggestionsHTML = '<div class="suggestions-container">';
@@ -669,13 +694,21 @@ function makeStockCardsClickable() {
 // Open stock detail modal
 async function openStockDetail(symbol) {
     if (!symbol || !stockDetailModal) return;
-    
+
     // Reset modal content
     document.getElementById('detail-symbol').textContent = symbol;
     document.getElementById('detail-name').textContent = 'Loading...';
     document.getElementById('detail-price').textContent = '--';
     document.getElementById('detail-change').textContent = '';
     document.getElementById('detail-change').className = '';
+    const descContainer = document.getElementById('company-description');
+    if (descContainer) {
+        descContainer.style.display = 'none';
+    }
+    const descText = document.getElementById('company-desc-text');
+    if (descText) {
+        descText.textContent = '';
+    }
     
     // Find company info
     const stockInfo = STOCK_SYMBOLS.find(s => s.symbol === symbol);
@@ -803,9 +836,10 @@ async function fetchCompanyProfile(symbol) {
         
         if (data && data.name) {
             document.getElementById('detail-name').textContent = data.name;
-            
-            const descEl = document.getElementById('detail-description');
-            if (descEl) {
+
+            const descEl = document.getElementById('company-desc-text');
+            const container = document.getElementById('company-description');
+            if (descEl && container) {
                 let description = '';
                 if (data.name) description += `${data.name} (${symbol}) `;
                 if (data.exchange) description += `is listed on the ${data.exchange}. `;
@@ -815,13 +849,13 @@ async function fetchCompanyProfile(symbol) {
                     const marketCap = (data.marketCapitalization / 1000).toFixed(2);
                     description += `Market Cap: $${marketCap}B. `;
                 }
-                
                 descEl.textContent = description || 'No company description available.';
+                container.style.display = 'block';
             }
         }
     } catch (error) {
         console.error('Error fetching company profile:', error);
-        const descEl = document.getElementById('detail-description');
+        const descEl = document.getElementById('company-desc-text');
         if (descEl) {
             descEl.textContent = `Unable to load company information for ${symbol}.`;
         }
@@ -844,18 +878,83 @@ async function updateStockChart(symbol) {
     `;
     
     try {
-        // For now, show a message about chart unavailability
-        // In production, you would fetch real historical data
-        chartContainer.innerHTML = `
-            <div class="text-center p-3">
-                <p class="mb-2">Chart data temporarily unavailable.</p>
-                <a href="https://finance.yahoo.com/quote/${symbol}/chart" 
-                   target="_blank" 
-                   class="btn btn-sm btn-outline-primary">
-                    View Chart on Yahoo Finance
-                </a>
-            </div>
-        `;
+        const ALPHA_VANTAGE_API_KEY = 'N7S0XMBRM3X27Q4W';
+        const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&apikey=${ALPHA_VANTAGE_API_KEY}&outputsize=compact`;
+
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch historical data: ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (data['Error Message'] || !data['Time Series (Daily)']) {
+            throw new Error('Invalid data received from Alpha Vantage');
+        }
+
+        const timeSeries = data['Time Series (Daily)'];
+        const dates = Object.keys(timeSeries).sort().slice(-14);
+        const chartData = dates.map(d => ({
+            date: new Date(d).toLocaleDateString(),
+            close: parseFloat(timeSeries[d]['4. close'])
+        }));
+
+        chartContainer.innerHTML = '<canvas id="stockPriceChart" width="100%" height="250"></canvas>';
+        const ctx = document.getElementById('stockPriceChart').getContext('2d');
+
+        if (stockChart) {
+            stockChart.destroy();
+        }
+
+        const firstPrice = chartData[0].close;
+        const lastPrice = chartData[chartData.length - 1].close;
+        const priceChange = lastPrice - firstPrice;
+        const chartColor = priceChange >= 0 ? 'rgba(40, 167, 69, 1)' : 'rgba(220, 53, 69, 1)';
+        const chartColorLight = priceChange >= 0 ? 'rgba(40, 167, 69, 0.2)' : 'rgba(220, 53, 69, 0.2)';
+
+        stockChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chartData.map(d => d.date),
+                datasets: [{
+                    label: `${symbol} Price`,
+                    data: chartData.map(d => d.close),
+                    borderColor: chartColor,
+                    backgroundColor: chartColorLight,
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    pointBackgroundColor: chartColor,
+                    pointBorderColor: '#fff',
+                    pointHoverRadius: 5,
+                    pointHoverBackgroundColor: chartColor,
+                    pointHoverBorderColor: '#fff',
+                    fill: true,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: ctx => `$${ctx.raw.toFixed(2)}`
+                        }
+                    }
+                },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: {
+                        grid: { color: 'rgba(0, 0, 0, 0.05)' },
+                        ticks: {
+                            callback: val => '$' + val
+                        }
+                    }
+                }
+            }
+        });
     } catch (error) {
         console.error('Error creating stock chart:', error);
         chartContainer.innerHTML = `
