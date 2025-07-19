@@ -113,25 +113,47 @@ function setupAuthListener() {
         const profileMenu = document.getElementById('auth-profile-menu');
         const profilePicNav = document.getElementById('user-profile-pic-nav');
         const displayNameNav = document.getElementById('user-display-name-nav');
+        const profilePicDropdown = document.getElementById('user-profile-pic-dropdown');
+        const userEmailNav = document.getElementById('user-email-nav');
+        const userNameNav = document.getElementById('user-name-nav');
+        const userIconNav = document.getElementById('user-icon-nav');
         const logoutBtnNav = document.getElementById('auth-logout-btn');
 
         if (user) {
             if (loginLink) loginLink.style.display = 'none';
             if (signupLink) signupLink.style.display = 'none';
             if (profileMenu) profileMenu.style.display = 'list-item';
-            if (profilePicNav) profilePicNav.src = user.photoURL || '/img/default-avatar.png';
-            if (displayNameNav) displayNameNav.textContent = user.displayName || user.email?.split('@')[0] || 'User';
+            if (profilePicNav) {
+                profilePicNav.src = user.photoURL || '/img/default-avatar.png';
+                profilePicNav.style.display = 'block';
+            }
+            if (displayNameNav) displayNameNav.textContent = user.displayName || user.email || 'User';
+            if (profilePicDropdown) profilePicDropdown.src = user.photoURL || '/img/default-avatar.png';
+            if (userEmailNav) userEmailNav.textContent = user.email || '';
+            if (userNameNav) {
+                userNameNav.textContent = user.displayName || user.email || 'User';
+                userNameNav.classList.remove('d-none');
+            }
+            if (userIconNav) userIconNav.style.display = 'none';
             if (logoutBtnNav) {
                 const newLogoutBtn = logoutBtnNav.cloneNode(true);
                 logoutBtnNav.parentNode?.replaceChild(newLogoutBtn, logoutBtnNav);
-                newLogoutBtn.addEventListener('click', () => { 
-                    auth.signOut().catch(error => console.error("Sign out error", error)); 
+                newLogoutBtn.addEventListener('click', () => {
+                    auth.signOut().catch(error => console.error("Sign out error", error));
                 });
             }
         } else {
             if (loginLink) loginLink.style.display = 'list-item';
             if (signupLink) signupLink.style.display = 'list-item';
             if (profileMenu) profileMenu.style.display = 'none';
+            if (userNameNav) {
+                userNameNav.textContent = 'Login';
+                userNameNav.classList.remove('d-none');
+            }
+            if (profilePicNav) profilePicNav.style.display = 'none';
+            if (profilePicDropdown) profilePicDropdown.src = '/img/default-avatar.png';
+            if (userEmailNav) userEmailNav.textContent = 'email@example.com';
+            if (userIconNav) userIconNav.style.display = 'inline-block';
         }
     });
 }
