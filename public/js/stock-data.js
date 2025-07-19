@@ -878,18 +878,83 @@ async function updateStockChart(symbol) {
     `;
     
     try {
-        // For now, show a message about chart unavailability
-        // In production, you would fetch real historical data
-        chartContainer.innerHTML = `
-            <div class="text-center p-3">
-                <p class="mb-2">Chart data temporarily unavailable.</p>
-                <a href="https://finance.yahoo.com/quote/${symbol}/chart" 
-                   target="_blank" 
-                   class="btn btn-sm btn-outline-primary">
-                    View Chart on Yahoo Finance
-                </a>
-            </div>
-        `;
+        const ALPHA_VANTAGE_API_KEY = 'N7S0XMBRM3X27Q4W';
+        const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&apikey=${ALPHA_VANTAGE_API_KEY}&outputsize=compact`;
+
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch historical data: ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (data['Error Message'] || !data['Time Series (Daily)']) {
+            throw new Error('Invalid data received from Alpha Vantage');
+        }
+
+        const timeSeries = data['Time Series (Daily)'];
+        const dates = Object.keys(timeSeries).sort().slice(-14);
+        const chartData = dates.map(d => ({
+            date: new Date(d).toLocaleDateString(),
+            close: parseFloat(timeSeries[d]['4. close'])
+        }));
+
+        chartContainer.innerHTML = '<canvas id="stockPriceChart" width="100%" height="250"></canvas>';
+        const ctx = document.getElementById('stockPriceChart').getContext('2d');
+
+        if (stockChart) {
+            stockChart.destroy();
+        }
+
+        const firstPrice = chartData[0].close;
+        const lastPrice = chartData[chartData.length - 1].close;
+        const priceChange = lastPrice - firstPrice;
+        const chartColor = priceChange >= 0 ? 'rgba(40, 167, 69, 1)' : 'rgba(220, 53, 69, 1)';
+        const chartColorLight = priceChange >= 0 ? 'rgba(40, 167, 69, 0.2)' : 'rgba(220, 53, 69, 0.2)';
+
+        stockChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chartData.map(d => d.date),
+                datasets: [{
+                    label: `${symbol} Price`,
+                    data: chartData.map(d => d.close),
+                    borderColor: chartColor,
+                    backgroundColor: chartColorLight,
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    pointBackgroundColor: chartColor,
+                    pointBorderColor: '#fff',
+                    pointHoverRadius: 5,
+                    pointHoverBackgroundColor: chartColor,
+                    pointHoverBorderColor: '#fff',
+                    fill: true,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: ctx => `$${ctx.raw.toFixed(2)}`
+                        }
+                    }
+                },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: {
+                        grid: { color: 'rgba(0, 0, 0, 0.05)' },
+                        ticks: {
+                            callback: val => '$' + val
+                        }
+                    }
+                }
+            }
+        });
     } catch (error) {
         console.error('Error creating stock chart:', error);
         chartContainer.innerHTML = `
