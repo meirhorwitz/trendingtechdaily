@@ -88,23 +88,42 @@ function loadSettingsPanel() {
                   <label for="facebook-url" class="form-label">Facebook URL</label>
                   <input type="url" class="form-control" id="facebook-url" name="facebookUrl">
                 </div>
-                
+
                 <div class="mb-3">
                   <label for="twitter-url" class="form-label">Twitter URL</label>
                   <input type="url" class="form-control" id="twitter-url" name="twitterUrl">
                 </div>
-                
+
                 <div class="mb-3">
                   <label for="instagram-url" class="form-label">Instagram URL</label>
                   <input type="url" class="form-control" id="instagram-url" name="instagramUrl">
                 </div>
-                
+
                 <div class="mb-3">
                   <label for="linkedin-url" class="form-label">LinkedIn URL</label>
                   <input type="url" class="form-control" id="linkedin-url" name="linkedinUrl">
                 </div>
-                
+
                 <button type="submit" class="btn btn-primary">Save Social Media Links</button>
+              </form>
+            </div>
+          </div>
+
+          <div class="card mb-4">
+            <div class="card-header">
+              <h5 class="mb-0">Auto Article Generation</h5>
+            </div>
+            <div class="card-body">
+              <form id="auto-article-settings-form">
+                <div class="mb-3">
+                  <label for="article-frequency" class="form-label">Articles Per Day</label>
+                  <select class="form-select" id="article-frequency">
+                    <option value="1">Once Daily</option>
+                    <option value="2">Twice Daily</option>
+                    <option value="3">Three Times Daily</option>
+                  </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Auto Article Settings</button>
               </form>
             </div>
           </div>
@@ -115,6 +134,7 @@ function loadSettingsPanel() {
 
   // Load existing settings
   loadSettings();
+  loadAutoArticleSettings();
   
   // Add event listeners to forms
   document.getElementById('general-settings-form').addEventListener('submit', function(e) {
@@ -144,6 +164,12 @@ function loadSettingsPanel() {
       instagramUrl: document.getElementById('instagram-url').value,
       linkedinUrl: document.getElementById('linkedin-url').value,
     });
+  });
+
+  document.getElementById('auto-article-settings-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const freq = parseInt(document.getElementById('article-frequency').value, 10) || 1;
+    saveAutoArticleFrequency(freq);
   });
   
   // Add logo selection functionality
@@ -214,7 +240,7 @@ function loadSettings() {
 
 function saveSettings(type, data) {
   data.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
-  
+
   settingsCollection.doc(type).set(data, { merge: true })
     .then(() => {
       showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} settings saved successfully`, 'success');
@@ -222,6 +248,30 @@ function saveSettings(type, data) {
     .catch(error => {
       console.error(`Error saving ${type} settings:`, error);
       showToast(`Error saving ${type} settings: ${error.message}`, 'danger');
+    });
+}
+
+function loadAutoArticleSettings() {
+  db.doc('config/autoArticleSchedule').get()
+    .then(doc => {
+      if (doc.exists) {
+        const data = doc.data();
+        document.getElementById('article-frequency').value = data.frequency || 1;
+      }
+    })
+    .catch(err => {
+      console.error('Error loading auto article settings:', err);
+    });
+}
+
+function saveAutoArticleFrequency(freq) {
+  db.doc('config/autoArticleSchedule').set({ frequency: freq }, { merge: true })
+    .then(() => {
+      showToast('Auto article settings saved', 'success');
+    })
+    .catch(err => {
+      console.error('Error saving auto article settings:', err);
+      showToast('Error saving auto article settings', 'danger');
     });
 }
 
