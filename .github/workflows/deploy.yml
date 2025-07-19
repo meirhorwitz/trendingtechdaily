@@ -35,5 +35,5 @@ jobs:
           # This is your Firebase Project ID.
           projectId: 'trendingtech-daily'
           
-          # Optional: specify the channel ID for preview deployments.
-          # channelId: live
+          # This line tells Firebase to deploy directly to your live site.
+          channelId: live
