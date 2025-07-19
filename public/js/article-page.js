@@ -231,6 +231,9 @@ async function renderArticle(article, section) {
                 <button type="button" id="share-copy-link" class="btn btn-link text-secondary btn-sm p-1" title="Copy Link">
                     <i class="bi bi-link-45deg"></i> Copy Link
                 </button>
+                <button type="button" id="read-aloud-btn" class="btn btn-link text-secondary btn-sm p-1" title="Listen to article">
+                    <i class="bi bi-volume-up"></i>
+                </button>
                 <span id="copy-link-feedback" class="ms-2 small text-success" style="display: none; opacity: 0;">Link Copied!</span>
                 <button type="button" id="save-article-btn" class="btn btn-outline-primary btn-sm ms-auto" style="display: none;">
                     <i class="bi bi-bookmark me-1"></i> <span>Save Article</span>
@@ -387,6 +390,9 @@ async function handlePostRenderActions(article, section) {
     
     // Setup share buttons with section info
     await setupShareButtons(article, section);
+    if (typeof setupReadAloud === 'function') {
+        setupReadAloud(article);
+    }
     
     // Setup save button
     if (currentUser && typeof setupSaveArticleButton === 'function') {
@@ -860,10 +866,43 @@ function initializeEmbeds() {
     }, 1500);
 }
 
+// --- Read Aloud Feature ---
+function setupReadAloud(article) {
+    const btn = document.getElementById('read-aloud-btn');
+    if (!btn || typeof functions === 'undefined') return;
+    btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        try {
+            const plainText = article.content.replace(/<[^>]+>/g, ' ').slice(0, 5000);
+            const readFunc = functions.httpsCallable('readArticleAloud');
+            const result = await readFunc({ text: plainText });
+            const data = result.data || {};
+            if (data.audioContent) {
+                const audio = new Audio(`data:audio/mp3;base64,${data.audioContent}`);
+                audio.play();
+            } else {
+                alert('Audio unavailable.');
+            }
+        } catch (err) {
+            console.error('Read aloud error:', err);
+            alert('Failed to generate audio.');
+        } finally {
+            btn.disabled = false;
+        }
+    });
+}
+
 // --- Code Block Enhancements ---
 function addCodeBlockActions() {
-    document.querySelectorAll('pre > code').forEach(codeBlock => {
-        const pre = codeBlock.parentNode;
+    document.querySelectorAll('pre > code, pre.ql-syntax').forEach(block => {
+        let pre = block.tagName === 'CODE' ? block.parentNode : block;
+        let codeBlock = block.tagName === 'CODE' ? block : null;
+        if (!codeBlock) {
+            codeBlock = document.createElement('code');
+            codeBlock.textContent = pre.textContent;
+            pre.textContent = '';
+            pre.appendChild(codeBlock);
+        }
         const language = Array.from(codeBlock.classList).find(cls => cls.startsWith('language-'));
         const langName = language ? language.substring(9) : 'text';
 
@@ -928,6 +967,10 @@ function addCodeBlockActions() {
 
         header.appendChild(buttonGroup);
         wrapper.parentNode.insertBefore(header, wrapper);
+
+        if (typeof Prism !== 'undefined') {
+            Prism.highlightElement(codeBlock);
+        }
     });
 }
 
