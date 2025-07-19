@@ -1054,6 +1054,7 @@ async function loadStockNews() {
                 img.className = 'card-img-top';
                 img.src = article.urlToImage;
                 img.alt = article.title;
+                img.onerror = () => img.remove();
                 card.appendChild(img);
             }
             const body = document.createElement('div');
