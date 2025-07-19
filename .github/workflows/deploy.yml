@@ -11,7 +11,7 @@ on:
 
 # 2. JOBS: A sequence of tasks to be executed
 jobs:
-  build_and_deploy:
+  deploy:
     # Use the latest version of Ubuntu for the virtual machine
     runs-on: ubuntu-latest
 
@@ -22,28 +22,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Step 2: Set up Node.js
-      # Firebase tools require Node.js to run.
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20' # Use a current LTS version of Node.js
-
-      # Step 3: Install project dependencies
-      # Assumes you have a package.json file. If not, you can remove this step.
-      - name: Install dependencies
-        run: npm install
-
-      # Step 4: Build your project
-      # This command compiles your code into static files.
-      # IMPORTANT: If your project doesn't have a build step or uses a different command
-      # (e.g., 'CI=false npm run build'), you should adjust this line.
-      # If you are just deploying static HTML/CSS/JS, you can remove this step.
-      - name: Build project
-        run: npm run build
-
-      # Step 5: Deploy to Firebase Hosting
-      # This is the core step that sends your built code to Firebase.
+      # Step 2: Deploy to Firebase Hosting
+      # This is the core step that sends your code to Firebase.
+      # The build and install steps were removed as they are not needed for your project.
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
