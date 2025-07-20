@@ -629,3 +629,35 @@ main > .container > section {
 .mb-4 { margin-bottom: var(--spacing-lg) !important; }
 .py-3 { padding-top: var(--spacing-md); padding-bottom: var(--spacing-md); }
 .py-5 { padding-top: var(--spacing-xl); padding-bottom: var(--spacing-xl); }
+
+/* --- Automation by Meir Banner --- */
+.automation-banner {
+  background: linear-gradient(135deg, #4285F4 0%, #34A853 100%);
+  color: #fff;
+  text-align: center;
+  border: none;
+  box-shadow: var(--shadow-deep);
+}
+
+.automation-banner-link {
+  color: inherit;
+  text-decoration: none;
+  display: block;
+}
+
+.automation-banner h4 {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  margin-bottom: var(--spacing-sm);
+  color: inherit;
+}
+
+.automation-banner p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: inherit;
+}
+
+.automation-banner:hover {
+  transform: translateY(-2px);
+}
