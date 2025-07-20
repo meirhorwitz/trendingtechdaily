@@ -174,7 +174,6 @@ function loadSettingsPanel() {
     const freq = parseInt(document.getElementById('article-frequency').value, 10) || 1;
     saveAutoArticleFrequency(freq);
   });
-
   const testBtn = document.getElementById('test-auto-article-btn');
   if (testBtn) {
     testBtn.addEventListener('click', async function() {

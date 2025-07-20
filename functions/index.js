@@ -129,5 +129,4 @@ exports.testGenerateArticle = onCall({ secrets: ["NEWS_API_KEY", "GEMINI_API_KEY
     throw new HttpsError('internal', 'Failed to generate article');
   }
 });
-
 logger.info("All active function modules loaded and exported successfully.");
