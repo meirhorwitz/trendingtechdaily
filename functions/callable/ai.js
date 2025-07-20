@@ -4,6 +4,7 @@ const { HttpsError } = require("firebase-functions/v2/https");
 const { logger, db, CONFIG } = require('../config'); 
 const { loadGeminiSDK, getSafetySettings, getSafe, getGeminiSDK, getStockMappingCacheDuration } = require('../utils');
 const fetch = require('node-fetch');
+const { fetchImageFromUnsplash } = require('../services/unsplashService');
 
 // --- Helper function to get fallback colors for SVG generation ---
 function getFallbackImagesForCategory(prompt = "") {
@@ -265,25 +266,38 @@ async function generateArticleImage(request) {
 
     let imageUrl = '';
     let imageAltText = `${articleTitle || prompt} - Technology illustration`;
-    let source = 'gemini-generated';
+    let source = 'unsplash';
     let message = '';
 
     try {
+        // First try Unsplash for a high quality photo
+        const unsplashKey = process.env.UNSPLASH_ACCESS_KEY;
+        if (unsplashKey) {
+            const unsplashImage = await fetchImageFromUnsplash(prompt, unsplashKey);
+            if (unsplashImage && unsplashImage.imageUrl) {
+                imageUrl = unsplashImage.imageUrl;
+                imageAltText = unsplashImage.altText || imageAltText;
+                source = 'unsplash';
+                message = 'Image fetched from Unsplash';
+                return { success: true, imageUrl, imageAltText, source, message };
+            }
+        }
+
         const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) {
             logger.error("generateArticleImage: GEMINI_API_KEY is not configured.");
             throw new HttpsError("internal", "GEMINI API Key not configured.");
         }
-        
+
         // Try to use Gemini to generate a base64 encoded SVG or simple image
         const sdkLoaded = await loadGeminiSDK();
         const { GoogleGenerativeAI } = getGeminiSDK();
-        
+
         if (!sdkLoaded || !GoogleGenerativeAI) {
             logger.error("GoogleGenerativeAI SDK not loaded.");
             throw new HttpsError("internal", "Core AI SDK failed to load.");
         }
-        
+
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({
             model: "gemini-1.5-pro-latest",
