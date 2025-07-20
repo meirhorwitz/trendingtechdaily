@@ -68,7 +68,6 @@ const adminCallables = require("./callable/admin");
 const proxyCallables = require("./callable/proxies");
 const toolCallables = require("./callable/tools");
 const { getTechPodcastsHandler } = require("./services/spotifyService");
-const { generateArticle } = require("./scheduledArticles");
 
 // AI Callables
 exports.generateArticleContent = onCall({ secrets: ["GEMINI_API_KEY"], timeoutSeconds: 180, region: "us-central1" }, aiCallables.generateArticleContent);
@@ -94,7 +93,7 @@ exports.getFinnhubStockData = onCall({ secrets: ["FINNHUB_API_KEY", "GEMINI_API_
 
 // === Scheduled Functions ===
 const { fetchAllNews } = require("./services/newsService");
-const { shouldGenerateArticle } = require("./scheduledArticles");
+const { shouldGenerateArticle, generateArticle } = require("./scheduledArticles");
 exports.scheduledNewsFetch = onSchedule({ schedule: "every 4 hours", region: "us-central1", secrets: ["NEWS_API_KEY"] }, async () => {
   logger.info("Scheduled news fetch triggered.");
   try {
@@ -130,5 +129,4 @@ exports.testGenerateArticle = onCall({ secrets: ["NEWS_API_KEY", "GEMINI_API_KEY
     throw new HttpsError('internal', 'Failed to generate article');
   }
 });
-
 logger.info("All active function modules loaded and exported successfully.");
