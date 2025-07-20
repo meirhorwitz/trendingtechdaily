@@ -1155,7 +1155,7 @@ if (typeof window.articlesManagerInitialized === 'undefined') {
         };
         try {
             localStorage.setItem('articlePreviewData', JSON.stringify(previewData));
-            window.open('/article-preview.html', '_blank');
+            window.open('/admin/article-preview.html', '_blank');
         } catch (error) {
             console.error("Error saving preview data to localStorage:", error);
             alert("Could not open preview: LocalStorage error.");

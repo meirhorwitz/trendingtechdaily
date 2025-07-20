@@ -5,7 +5,7 @@ const { logger, db } = require('./config');
 const aiCallables = require('./callable/ai');
 const articlesAdmin = require('./admin/articles');
 
-const CONFIG_DOC = 'config/autoArticleSchedule';
+const CONFIG_DOC = 'settings/autoArticleSchedule';
 
 function estimateReadingTime(html) {
   if (!html) return 0;

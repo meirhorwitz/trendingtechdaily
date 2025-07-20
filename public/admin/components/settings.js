@@ -123,7 +123,10 @@ function loadSettingsPanel() {
                     <option value="3">Three Times Daily</option>
                   </select>
                 </div>
-                <button type="submit" class="btn btn-primary">Save Auto Article Settings</button>
+                <div class="d-flex">
+                  <button type="submit" class="btn btn-primary me-2">Save Auto Article Settings</button>
+                  <button type="button" class="btn btn-secondary" id="test-auto-article-btn">Generate Test Article<span class="spinner-border spinner-border-sm d-none ms-1"></span></button>
+                </div>
               </form>
             </div>
           </div>
@@ -171,6 +174,22 @@ function loadSettingsPanel() {
     const freq = parseInt(document.getElementById('article-frequency').value, 10) || 1;
     saveAutoArticleFrequency(freq);
   });
+
+  const testBtn = document.getElementById('test-auto-article-btn');
+  if (testBtn) {
+    testBtn.addEventListener('click', async function() {
+      setButtonLoading('test-auto-article-btn', true);
+      try {
+        await firebase.functions().httpsCallable('testGenerateArticle')();
+        showToast('Test article generated successfully', 'success');
+      } catch (err) {
+        console.error('Error generating test article:', err);
+        showToast('Error generating test article', 'danger');
+      } finally {
+        setButtonLoading('test-auto-article-btn', false);
+      }
+    });
+  }
   
   // Add logo selection functionality
   document.getElementById('select-logo-btn').addEventListener('click', function() {
@@ -252,7 +271,7 @@ function saveSettings(type, data) {
 }
 
 function loadAutoArticleSettings() {
-  db.doc('config/autoArticleSchedule').get()
+  settingsCollection.doc('autoArticleSchedule').get()
     .then(doc => {
       if (doc.exists) {
         const data = doc.data();
@@ -265,7 +284,7 @@ function loadAutoArticleSettings() {
 }
 
 function saveAutoArticleFrequency(freq) {
-  db.doc('config/autoArticleSchedule').set({ frequency: freq }, { merge: true })
+  settingsCollection.doc('autoArticleSchedule').set({ frequency: freq }, { merge: true })
     .then(() => {
       showToast('Auto article settings saved', 'success');
     })
@@ -273,6 +292,14 @@ function saveAutoArticleFrequency(freq) {
       console.error('Error saving auto article settings:', err);
       showToast('Error saving auto article settings', 'danger');
     });
+}
+
+function setButtonLoading(buttonId, isLoading) {
+  const btn = document.getElementById(buttonId);
+  if (!btn) return;
+  const spinner = btn.querySelector('.spinner-border');
+  if (spinner) spinner.classList.toggle('d-none', !isLoading);
+  btn.disabled = isLoading;
 }
 
 function showToast(message, type = 'success') {
