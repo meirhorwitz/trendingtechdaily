@@ -25,6 +25,7 @@ function initializeNavigation() {
     // These are now guaranteed to run after nav.html is in the DOM
     initializeSearch();
     initializeResponsiveCategories();
+    initializeLanguageSwitch();
 
     // Initialize user authentication state if the function exists
     if (window.initializeAuth) {
@@ -319,6 +320,18 @@ function loadFooterCategories() {
       console.error('Error loading footer categories:', error);
       footerCategoriesList.innerHTML = '<li class="text-muted">Unable to load categories</li>';
     });
+}
+
+function initializeLanguageSwitch() {
+  const link = document.getElementById('language-switch-link');
+  if (!link) return;
+  if (window.language === 'he') {
+    link.textContent = 'English';
+    link.href = '/index.html';
+  } else {
+    link.textContent = 'עברית';
+    link.href = '/index-he.html';
+  }
 }
 
 // Wait for Firebase to be ready
