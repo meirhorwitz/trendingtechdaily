@@ -205,7 +205,7 @@ function initializeResponsiveCategories() {
       li.setAttribute('data-category', 'true'); // Mark as category item
       const a = document.createElement('a');
       a.className = 'nav-link';
-      a.href = `/${cat.slug}`;
+      a.href = window.language === 'he' ? `/category-he.html?slug=${cat.slug}` : `/${cat.slug}`;
       a.textContent = translateCategory(cat.name);
       li.appendChild(a);
       
@@ -224,7 +224,7 @@ function initializeResponsiveCategories() {
         const li = document.createElement('li');
         const a = document.createElement('a');
         a.className = 'dropdown-item';
-        a.href = `/${cat.slug}`;
+        a.href = window.language === 'he' ? `/category-he.html?slug=${cat.slug}` : `/${cat.slug}`;
         a.textContent = translateCategory(cat.name);
         li.appendChild(a);
         moreDropdownMenu.appendChild(li);
@@ -323,16 +323,17 @@ function loadFooterCategories() {
         snapshot.forEach(doc => {
           const category = doc.data();
           const slug = category.slug || category.name.toLowerCase().replace(/\s+/g, '-');
-          categoriesHTML += `<li><a href="/${slug}">${translateCategory(category.name)}</a></li>`;
+          const href = window.language === 'he' ? `/category-he.html?slug=${slug}` : `/${slug}`;
+          categoriesHTML += `<li><a href="${href}">${translateCategory(category.name)}</a></li>`;
         });
         footerCategoriesList.innerHTML = categoriesHTML;
       } else {
         // Use default categories
         footerCategoriesList.innerHTML = `
-          <li><a href="/ai">${translateCategory('AI')}</a></li>
-          <li><a href="/gadgets">${translateCategory('Gadgets')}</a></li>
-          <li><a href="/startups">${translateCategory('Startups')}</a></li>
-          <li><a href="/crypto">${translateCategory('Crypto')}</a></li>
+          <li><a href="${window.language === 'he' ? '/category-he.html?slug=ai' : '/ai'}">${translateCategory('AI')}</a></li>
+          <li><a href="${window.language === 'he' ? '/category-he.html?slug=gadgets' : '/gadgets'}">${translateCategory('Gadgets')}</a></li>
+          <li><a href="${window.language === 'he' ? '/category-he.html?slug=startups' : '/startups'}">${translateCategory('Startups')}</a></li>
+          <li><a href="${window.language === 'he' ? '/category-he.html?slug=crypto' : '/crypto'}">${translateCategory('Crypto')}</a></li>
         `;
       }
     })

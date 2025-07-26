@@ -1,54 +1,35 @@
-// Overrides for Hebrew version
+// index-he.js - dynamic Hebrew overrides and translation
 window.language = 'he';
 window.videoKeywords = ['חדשות טכנולוגיה', 'חדשנות', 'סקירות גאדג׳טים'];
 window.podcastQuery = 'פודקאסט טכנולוגיה';
 window.podcastMarket = 'IL';
 
-const hebrewArticles = [
-  {
-    id: 'he1',
-    title: 'בינה מלאכותית בעולם העסקים',
-    excerpt: 'כיצד AI משנה את פני התעשייה.',
-    slug: '#',
-    createdAt: { toDate: () => new Date() },
-    featuredImage: '/img/default-podcast-art.png',
-    readingTimeMinutes: 3,
-    category: 'General'
-  },
-  {
-    id: 'he2',
-    title: 'הגאדג\'ט החדש שמשגע את כולם',
-    excerpt: 'סקירה מהירה של המכשיר החם בשוק.',
-    slug: '#',
-    createdAt: { toDate: () => new Date() },
-    featuredImage: '/img/default-podcast-art.png',
-    readingTimeMinutes: 2,
-    category: 'Gadgets'
-  },
-  {
-    id: 'he3',
-    title: 'מדריך קצר לאבטחת סייבר',
-    excerpt: 'טיפים חשובים לשמירה על פרטיותך.',
-    slug: '#',
-    createdAt: { toDate: () => new Date() },
-    featuredImage: '/img/default-podcast-art.png',
-    readingTimeMinutes: 4,
-    category: 'Security'
+function translateText(text) {
+  return fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=he&dt=t&q=${encodeURIComponent(text)}`)
+    .then(r => r.json())
+    .then(d => d[0][0][0])
+    .catch(() => text);
+}
+
+async function translateHome() {
+  const titles = document.querySelectorAll('.article-title');
+  for (const el of titles) {
+    el.textContent = await translateText(el.textContent.trim());
+    const link = el.querySelector('a');
+    if (link && link.href.includes('article.html')) {
+      const url = new URL(link.href);
+      url.pathname = '/article-he.html';
+      link.href = url.toString();
+    }
   }
-];
-
-function loadFeaturedArticle() {
-  const container = document.getElementById('featured-article-container');
-  if (!container) return;
-  const doc = { id: hebrewArticles[0].id, data: () => hebrewArticles[0] };
-  renderArticle(doc, container, true);
+  const descs = document.querySelectorAll('.article-description');
+  for (const el of descs) {
+    if (el.textContent.trim()) {
+      el.textContent = await translateText(el.textContent.trim());
+    }
+  }
 }
 
-function loadLatestArticles() {
-  const container = document.getElementById('articles-container');
-  if (!container) return;
-  container.innerHTML = '';
-  hebrewArticles.slice(0, 3).forEach(article => {
-    container.innerHTML += renderArticleCard(article);
-  });
-}
+document.addEventListener('firebase-ready', () => {
+  setTimeout(translateHome, 3000);
+});
