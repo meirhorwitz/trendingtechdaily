@@ -68,7 +68,6 @@ const adminCallables = require("./callable/admin");
 const proxyCallables = require("./callable/proxies");
 const toolCallables = require("./callable/tools");
 const { getTechPodcastsHandler } = require("./services/spotifyService");
-const contactCallables = require("./callable/contact");
 
 // AI Callables
 exports.generateArticleContent = onCall({ secrets: ["GEMINI_API_KEY"], timeoutSeconds: 180, region: "us-central1" }, aiCallables.generateArticleContent);
@@ -91,7 +90,6 @@ exports.getTechPodcasts = onCall({ secrets: ["SPOTIFY_CLIENT_ID", "SPOTIFY_CLIEN
 // Tool Callables
 exports.searchWeb = onCall({ secrets: ["GEMINI_API_KEY"], region: "us-central1" }, toolCallables.searchWeb);
 exports.getFinnhubStockData = onCall({ secrets: ["FINNHUB_API_KEY", "GEMINI_API_KEY"], region: "us-central1" }, toolCallables.getFinnhubStockData);
-exports.sendContactEmail = onCall({ secrets: ["EMAIL_PASSWORD"], region: "us-central1" }, contactCallables.sendContactEmail);
 
 // === Scheduled Functions ===
 const { fetchAllNews } = require("./services/newsService");

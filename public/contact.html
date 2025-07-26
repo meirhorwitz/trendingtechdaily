@@ -42,32 +42,28 @@
   
   <!-- Page Content: Contact -->
   <div class="container my-5">
-    <div class="row justify-content-center">
-      <div class="col-md-8 col-lg-6">
-        <div class="card shadow-sm p-4">
-          <h1 class="mb-3 text-center">Contact Us</h1>
-          <p class="text-muted">Have a question or feedback? Fill out the form below or email us at <a href="mailto:info@trendingtechdaily.com">info@trendingtechdaily.com</a>.</p>
-          <form id="contactForm" onsubmit="submitForm(event)">
-            <div class="form-floating mb-3">
-              <input type="text" name="name" id="name" class="form-control" placeholder="Your Name" required>
-              <label for="name">Name</label>
-            </div>
-            <div class="form-floating mb-3">
-              <input type="email" name="email" id="email" class="form-control" placeholder="name@example.com" required>
-              <label for="email">Email</label>
-            </div>
-            <div class="form-floating mb-3">
-              <textarea name="inquiry" id="inquiry" class="form-control" placeholder="Your Inquiry" style="height: 150px" required></textarea>
-              <label for="inquiry">Inquiry</label>
-            </div>
-            <button type="submit" class="btn btn-primary w-100" id="submitButton">Submit</button>
-            <div id="formStatus" class="mt-3"></div>
-          </form>
+    <h1>Contact Us</h1>
+    <p>If you have any questions, suggestions, or need further information, please do not hesitate to get in touch. We value your feedback and strive to respond to all inquiries as promptly as possible.</p>
+    <p><strong>Email:</strong> <a href="mailto:info@trendingtechdaily.com">info@trendingtechdaily.com</a></p>
+    <p><strong>Address:</strong> Tech Hub, Digital Avenue, City, Country</p>
+    <p><strong>Phone:</strong> (123) 456-7890</p>
+    <hr>
+    <h2>Send Us a Message</h2>
+    <form id="contactForm" onsubmit="submitForm(event)">
+        <div class="mb-3">
+          <input type="text" name="name" id="name" class="form-control" placeholder="Your Name" required>
         </div>
-      </div>
-    </div>
-  </div>
-
+        <div class="mb-3">
+          <input type="email" name="email" id="email" class="form-control" placeholder="Your Email" required>
+        </div>
+        <div class="mb-3">
+          <textarea name="message" id="message" class="form-control" rows="5" placeholder="Your Message" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-dark" id="submitButton">Submit</button>
+        <div id="formStatus" class="mt-3"></div>
+      </form>
+      
+      <!-- Firebase initialized in config.js -->
       <script>
         // Form submission handler
         function submitForm(event) {
@@ -84,14 +80,14 @@
           // Get form values
           const name = document.getElementById('name').value;
           const email = document.getElementById('email').value;
-          const inquiry = document.getElementById('inquiry').value;
+          const message = document.getElementById('message').value;
           
           // Call Firebase function
           const sendEmail = firebase.functions().httpsCallable('sendContactEmail');
           sendEmail({
             name: name,
             email: email,
-            inquiry: inquiry
+            message: message
           })
           .then((result) => {
             formStatus.innerHTML = '<div class="alert alert-success">Thank you for your message! We will get back to you soon.</div>';
