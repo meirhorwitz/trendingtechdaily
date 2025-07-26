@@ -201,7 +201,7 @@ function renderArticle(doc, container, isFeatured = false) {
             }
         }
         
-        const articleUrl = article.slug ? (window.language === 'he' ? `/article-he.html?slug=${article.slug}` : `/article.html?slug=${article.slug}`) : '#';
+        const articleUrl = article.slug ? `/article.html?slug=${article.slug}` : '#';
         const cardClass = isFeatured ? 'featured-article' : 'article-card';
         const titleTag = isFeatured ? 'h2' : 'h3';
         const title = getSafe(() => article.title, 'Untitled Article');
@@ -246,7 +246,7 @@ function renderArticleCard(article) {
             }
         }
         
-        const articleUrl = getSafe(() => article.slug) ? (window.language === 'he' ? `/article-he.html?slug=${getSafe(() => article.slug)}` : `/article.html?slug=${getSafe(() => article.slug)}`) : '#';
+        const articleUrl = getSafe(() => article.slug) ? `/article.html?slug=${getSafe(() => article.slug)}` : '#';
         const title = getSafe(() => article.title, 'Untitled Article');
         const excerpt = getSafe(() => article.excerpt, '');
         const featuredImage = getSafe(() => article.featuredImage);
