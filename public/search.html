@@ -123,7 +123,7 @@
     <script src="/js/config.js"></script>
     <script>
 // Inline search.js to avoid loading conflicts
-document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener('DOMContentLoaded', async function() {
   const searchInput = document.getElementById('searchInput');
   const searchQueryDisplay = document.getElementById('searchQueryDisplay');
   const searchResultsDiv = document.getElementById('searchResults');
@@ -157,23 +157,23 @@ document.addEventListener('DOMContentLoaded', function() {
   // Load categories for filter dropdown and mapping
   async function loadCategories() {
     try {
-      const categoriesSnapshot = await db.collection('categories')
-        .orderBy('name')
-        .get();
-      
-      if (!categoriesSnapshot.empty) {
-        // Clear existing options except "All Categories"
+      let snapshot = await db.collection('categories').orderBy('name').get();
+
+      if (snapshot.empty) {
+        console.log("No documents in 'categories' collection, trying 'sections'");
+        snapshot = await db.collection('sections').orderBy('name').get();
+      }
+
+      if (!snapshot.empty) {
         categoryFilter.innerHTML = '<option value="">All Categories</option>';
-        
-        categoriesSnapshot.forEach(doc => {
+
+        snapshot.forEach(doc => {
           const data = doc.data();
           const categoryId = doc.id;
           const categoryName = data.name || categoryId;
-          
-          // Add to mapping
+
           categoryNames[categoryId] = categoryName;
-          
-          // Add to filter dropdown
+
           const option = document.createElement('option');
           option.value = categoryId;
           option.textContent = categoryName;
@@ -255,18 +255,17 @@ document.addEventListener('DOMContentLoaded', function() {
     searchMeta.style.display = 'block';
     
     articles.forEach(article => {
-      const articleDate = article.publishedAt 
-        ? new Date(article.publishedAt.toDate ? article.publishedAt.toDate() : article.publishedAt).toLocaleDateString('en-US', { 
-            year: 'numeric', 
-            month: 'short', 
-            day: 'numeric' 
-          })
-        : article.createdAt && article.createdAt._seconds 
-          ? new Date(article.createdAt._seconds * 1000).toLocaleDateString('en-US', { 
-              year: 'numeric', 
-              month: 'short', 
-              day: 'numeric' 
-            }) 
+      const articleDate = article.publishedAt
+        ? new Date(article.publishedAt.toDate ? article.publishedAt.toDate() : article.publishedAt)
+            .toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+        : article.createdAt
+          ? new Date(
+              article.createdAt.toDate
+                ? article.createdAt.toDate()
+                : article.createdAt._seconds
+                  ? article.createdAt._seconds * 1000
+                  : article.createdAt
+            ).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
           : 'Date not available';
       
       const excerpt = article.excerpt || 'No preview available';
@@ -492,12 +491,12 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   
   // Initialize
-  loadCategories(); // Load categories first
+  await loadCategories();
   const urlParams = new URLSearchParams(window.location.search);
   const queryFromUrl = urlParams.get('q');
   if (queryFromUrl) {
     searchInput.value = queryFromUrl;
-    performSearch(queryFromUrl);
+    await performSearch(queryFromUrl);
   }
 
   loadTrendingTopics();
