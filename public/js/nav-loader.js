@@ -20,29 +20,14 @@ function initializeNavigation() {
       .catch(error => console.error(`Error loading content for ${placeholderId}:`, error));
   };
 
-  const categoryTranslations = {
-    'AI': 'בינה מלאכותית',
-    'Gadgets': 'גאדג\'טים',
-    'Startups': 'סטארטאפים',
-    'Crypto': 'מטבעות קריפטו',
-    'Security': 'אבטחה',
-    'General': 'כללי'
-  };
-
-  const translateCategory = (name) => {
-    if (window.language === 'he') {
-      return categoryTranslations[name] || name;
-    }
-    return name;
-  };
+  const translateCategory = (name) => name;
 
   // Load the navigation, then initialize all its interactive elements
-  const navFile = window.language === 'he' ? '/nav-he.html' : '/nav.html';
+  const navFile = '/nav.html';
   loadHTML(navFile, 'navbar-placeholder', () => {
     // These are now guaranteed to run after nav.html is in the DOM
     initializeSearch();
     initializeResponsiveCategories();
-    initializeLanguageSwitch();
 
     // Initialize user authentication state if the function exists
     if (window.initializeAuth) {
@@ -51,7 +36,7 @@ function initializeNavigation() {
   });
 
   // Load the footer
-  const footerFile = window.language === 'he' ? '/footer-he.html' : '/footer.html';
+  const footerFile = '/footer.html';
   loadHTML(footerFile, 'footer-placeholder', () => {
     // After footer is loaded, populate categories if Firebase is ready
     if (typeof firebase !== 'undefined' && firebase.apps.length) {
@@ -179,8 +164,8 @@ function initializeResponsiveCategories() {
     const navbarNav = document.querySelector('#navbarMain .navbar-nav');
     const moreDropdownMenu = document.getElementById('more-dropdown-menu');
     const moreDropdown = document.getElementById('more-dropdown');
-    const podcastsLabel = window.language === 'he' ? 'פודקאסטים' : 'Podcasts';
-    const stocksLabel = window.language === 'he' ? 'מניות' : 'Stocks';
+    const podcastsLabel = 'Podcasts';
+    const stocksLabel = 'Stocks';
 
     if (!navbarNav) {
       console.error('Navbar nav element not found');
@@ -205,7 +190,7 @@ function initializeResponsiveCategories() {
       li.setAttribute('data-category', 'true'); // Mark as category item
       const a = document.createElement('a');
       a.className = 'nav-link';
-      a.href = window.language === 'he' ? `/category-he.html?slug=${cat.slug}` : `/${cat.slug}`;
+      a.href = `/${cat.slug}`;
       a.textContent = translateCategory(cat.name);
       li.appendChild(a);
       
@@ -224,7 +209,7 @@ function initializeResponsiveCategories() {
         const li = document.createElement('li');
         const a = document.createElement('a');
         a.className = 'dropdown-item';
-        a.href = window.language === 'he' ? `/category-he.html?slug=${cat.slug}` : `/${cat.slug}`;
+        a.href = `/${cat.slug}`;
         a.textContent = translateCategory(cat.name);
         li.appendChild(a);
         moreDropdownMenu.appendChild(li);
@@ -323,17 +308,17 @@ function loadFooterCategories() {
         snapshot.forEach(doc => {
           const category = doc.data();
           const slug = category.slug || category.name.toLowerCase().replace(/\s+/g, '-');
-          const href = window.language === 'he' ? `/category-he.html?slug=${slug}` : `/${slug}`;
+          const href = `/${slug}`;
           categoriesHTML += `<li><a href="${href}">${translateCategory(category.name)}</a></li>`;
         });
         footerCategoriesList.innerHTML = categoriesHTML;
       } else {
         // Use default categories
         footerCategoriesList.innerHTML = `
-          <li><a href="${window.language === 'he' ? '/category-he.html?slug=ai' : '/ai'}">${translateCategory('AI')}</a></li>
-          <li><a href="${window.language === 'he' ? '/category-he.html?slug=gadgets' : '/gadgets'}">${translateCategory('Gadgets')}</a></li>
-          <li><a href="${window.language === 'he' ? '/category-he.html?slug=startups' : '/startups'}">${translateCategory('Startups')}</a></li>
-          <li><a href="${window.language === 'he' ? '/category-he.html?slug=crypto' : '/crypto'}">${translateCategory('Crypto')}</a></li>
+          <li><a href="/ai">${translateCategory('AI')}</a></li>
+          <li><a href="/gadgets">${translateCategory('Gadgets')}</a></li>
+          <li><a href="/startups">${translateCategory('Startups')}</a></li>
+          <li><a href="/crypto">${translateCategory('Crypto')}</a></li>
         `;
       }
     })
@@ -343,17 +328,6 @@ function loadFooterCategories() {
     });
 }
 
-function initializeLanguageSwitch() {
-  const link = document.getElementById('language-switch-link');
-  if (!link) return;
-  if (window.language === 'he') {
-    link.textContent = 'English';
-    link.href = '/index.html';
-  } else {
-    link.textContent = 'עברית';
-    link.href = '/index-he.html';
-  }
-}
 
 // Wait for Firebase to be ready
 document.addEventListener('firebase-ready', () => {

@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        const navFile = window.language === 'he' ? '/nav-he.html' : '/nav.html';
+        const navFile = '/nav.html';
         fetch(navFile)
             .then(response => {
                 if (!response.ok) throw new Error(`nav.html load failed: ${response.status}`);
@@ -608,7 +608,7 @@ function loadNavbarAndDependentContent() {
         return;
     }
 
-    const navFileLate = window.language === 'he' ? '/nav-he.html' : '/nav.html';
+    const navFileLate = '/nav.html';
     fetch(navFileLate)
         .then(response => {
             if (!response.ok) throw new Error(`nav.html load failed: ${response.status}`);
