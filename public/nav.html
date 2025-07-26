@@ -12,7 +12,23 @@
         <li class="nav-item">
           <a class="nav-link" href="/podcasts.html">Podcasts</a>
         </li>
+        <!-- More dropdown for overflow categories -->
+        <li class="nav-item dropdown d-none" id="more-dropdown">
+          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">More</a>
+          <ul class="dropdown-menu" id="more-dropdown-menu"></ul>
+        </li>
         <li id="category-nav-placeholder"></li>
+        <!-- Search bar -->
+        <li class="nav-item">
+          <form class="d-flex" id="nav-search-form" role="search">
+            <input class="form-control me-2" type="search" placeholder="Search..." aria-label="Search" id="nav-search-input">
+          </form>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#" id="search-toggle-btn" role="button" aria-label="Toggle search">
+            <i class="bi bi-search"></i>
+          </a>
+        </li>
         <li class="nav-item" id="auth-login-link">
           <a class="nav-link" href="/login.html">Login</a>
         </li>
