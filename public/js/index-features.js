@@ -55,7 +55,7 @@ async function loadRecommendedVideos() {
         console.log("Calling getRecommendedVideos Cloud Function...");
         const getVideosCallable = functions.httpsCallable('getRecommendedVideos');
 
-        const searchKeywords = ['latest technology', 'ai innovation', 'gadget reviews', 'tech news'];
+        const searchKeywords = window.videoKeywords || ['latest technology', 'ai innovation', 'gadget reviews', 'tech news'];
         const result = await getVideosCallable({ keywords: searchKeywords, maxResults: 6 });
 
         const videoData = getSafe(() => result.data.videos, []);
@@ -365,7 +365,8 @@ async function loadSidebarPodcasts() {
         const getTechPodcastsFn = functions.httpsCallable('getTechPodcasts');
 
         const result = await getTechPodcastsFn({
-            query: "technology podcast programming ai",
+            query: window.podcastQuery || "technology podcast programming ai",
+            market: window.podcastMarket || "US",
             limit: 4
         });
 
