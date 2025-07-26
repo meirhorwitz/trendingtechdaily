@@ -1,64 +1,33 @@
-<!-- Updated nav.html with profile picture support -->
-<nav class="navbar navbar-expand-lg navbar-light bg-white py-3">
+<nav class="navbar navbar-expand-lg">
   <div class="container">
     <a class="navbar-brand" href="/">TrendingTech Daily</a>
-
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain" aria-controls="navbarMain" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
-
     <div class="collapse navbar-collapse" id="navbarMain">
-      <ul class="navbar-nav ms-auto align-items-center">
-        <!-- Categories will be dynamically inserted here by nav-loader.js -->
-
-        <!-- More dropdown for overflow categories -->
-        <li class="nav-item dropdown d-none" id="more-dropdown">
-          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">More</a>
-          <ul class="dropdown-menu" id="more-dropdown-menu"></ul>
-        </li>
-
-        <!-- Search functionality -->
+      <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-center">
         <li class="nav-item">
-          <form class="d-flex" id="nav-search-form" role="search">
-            <input class="form-control me-2" type="search" placeholder="Search..." aria-label="Search" id="nav-search-input">
-          </form>
+          <a class="nav-link" href="/">Home</a>
         </li>
-        
         <li class="nav-item">
-            <a class="nav-link" href="#" id="search-toggle-btn" role="button" aria-label="Toggle search">
-              <i class="bi bi-search"></i>
-            </a>
+          <a class="nav-link" href="/podcasts.html">Podcasts</a>
         </li>
-        <li class="nav-item" id="language-switch-item">
-          <a class="nav-link" id="language-switch-link" href="/index-he.html">עברית</a>
+        <li id="category-nav-placeholder"></li>
+        <li class="nav-item" id="auth-login-link">
+          <a class="nav-link" href="/login.html">Login</a>
         </li>
-
-        <!-- Updated user dropdown with profile picture -->
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-            <img id="user-profile-pic-nav" src="/img/default-avatar.png" alt="Profile" class="rounded-circle me-2" style="width: 30px; height: 30px; object-fit: cover; display: none;">
-            <span id="user-name-nav" class="me-2 d-none"></span>
-            <i class="fas fa-user" id="user-icon-nav"></i>
+        <li class="nav-item" id="auth-signup-link">
+          <a class="nav-link" href="/signup.html">Sign Up</a>
+        </li>
+        <li class="nav-item dropdown" id="auth-profile-menu">
+          <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="profileDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <img id="user-profile-pic-nav" src="/img/default-avatar.png" alt="User" style="width: 25px; height: 25px; border-radius: 50%; margin-right: 8px; background-color: #eee;">
+            <span id="user-display-name-nav">Profile</span>
           </a>
-          <ul class="dropdown-menu dropdown-menu-end">
-            <!-- Auth links for non-logged in users -->
-            <li id="auth-login-link"><a class="dropdown-item" href="/login.html">Login</a></li>
-            <li id="auth-signup-link"><a class="dropdown-item" href="/signup.html">Sign Up</a></li>
-            
-            <!-- Profile menu for logged in users -->
-            <li id="auth-profile-menu" style="display: none;">
-              <div class="dropdown-item-text d-flex align-items-center border-bottom pb-2 mb-2">
-                <img id="user-profile-pic-dropdown" src="/img/default-avatar.png" alt="Profile" class="rounded-circle me-2" style="width: 40px; height: 40px; object-fit: cover;">
-                <div>
-                  <div class="fw-bold" id="user-display-name-nav">User</div>
-                  <small class="text-muted" id="user-email-nav">email@example.com</small>
-                </div>
-              </div>
-              <a class="dropdown-item" href="/profile.html"><i class="bi bi-person-circle me-2"></i>My Profile</a>
-              <a class="dropdown-item" href="/stock-data.html"><i class="bi bi-graph-up me-2"></i>Stock Watchlist</a>
-              <div class="dropdown-divider"></div>
-              <a class="dropdown-item" href="#" id="auth-logout-btn"><i class="bi bi-box-arrow-right me-2"></i>Logout</a>
-            </li>
+          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
+            <li><a class="dropdown-item" href="/profile.html">My Profile</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><button class="dropdown-item" type="button" id="auth-logout-btn">Logout</button></li>
           </ul>
         </li>
       </ul>
