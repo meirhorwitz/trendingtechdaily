@@ -1,15 +1,14 @@
 <!DOCTYPE html>
-<html lang="he" dir="rtl">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>טק יומי - חדשות וטכנולוגיה</title>
+  <title>TrendingTech Daily - Latest Tech News and Trends</title>
   <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
   new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
   j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
   })(window,document,'script','dataLayer','GTM-M68CNVMQ');</script>
-  <script>window.language = "he";</script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js"></script>
@@ -25,7 +24,6 @@
   <link rel="stylesheet" href="css/ai-agent.css">
   <link rel="stylesheet" href="css/popup.css" />
   <link rel="stylesheet" href="css/sidebar-podcasts.css" />
-  <link rel="stylesheet" href="css/rtl.css" />
 
 
 
@@ -114,42 +112,46 @@
   <section class="container mb-5" id="featured-article-container">
     <div class="spinner-container text-center py-5">
       <div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div>
-      <p>טוען מאמר נבחר...</p>
+      <p>Loading featured article...</p>
     </div>
   </section>
   <section class="container mt-5 mb-4 video-recommendations">
-    <h2 class="section-title">סרטונים מומלצים</h2>
+    <h2 class="section-title">Recommended Videos</h2>
     <div id="video-loader" class="spinner-container text-center py-4">
          <div class="spinner-border text-secondary spinner-border-sm" role="status"></div>
-         <p class="text-muted small mt-2">טוען סרטונים...</p>
+         <p class="text-muted small mt-2">Loading videos...</p>
     </div>
     <div id="video-recommendations-container" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
         </div>
 
         <div id="show-more-videos-container" class="text-center mt-4" style="display: none;">
-          <button id="show-more-videos-btn" class="btn btn-outline-secondary btn-sm">הצג עוד סרטונים</button>
-          <button id="show-less-videos-btn" class="btn btn-outline-secondary btn-sm" style="display: none;">הצג פחות סרטונים</button> </div>
+          <button id="show-more-videos-btn" class="btn btn-outline-secondary btn-sm">Show More Videos</button>
+          <button id="show-less-videos-btn" class="btn btn-outline-secondary btn-sm" style="display: none;">Show Less Videos</button> </div>
     </section>
   <main class="container">
     <div class="row">
       <div class="col-lg-8">
-        <h2 class="section-title">המאמרים האחרונים</h2>
+        <h2 class="section-title">Latest Articles</h2>
         <div id="articles-container">
-          <div class="spinner-container text-center py-5"><div class="spinner-border" role="status"></div><p>טוען מאמרים...</p></div>
+          <div class="spinner-container text-center py-5"><div class="spinner-border" role="status"></div><p>Loading articles...</p></div>
+        </div>
+        <hr class="section-divider my-5">
+        <div id="api-articles-container">
+           <div class="spinner-container text-center py-5" id="api-loading-initial"><div class="spinner-border" role="status"></div><p>Loading news feeds...</p></div>
         </div>
       </div>
       <aside class="col-lg-4">
         <div class="sidebar-section mb-5">
-          <h4>נושאים חמים</h4>
+          <h4>Trending Topics</h4>
           <ul class="trending-topics-list" id="categories-list">
             <div class="spinner-container py-2 text-center"><div class="spinner-border spinner-border-sm" role="status"></div></div>
           </ul>
         </div>
         <div class="sidebar-section mb-5">
           <div class="section-header d-flex justify-content-between align-items-center mb-3">
-            <h4>פודקאסטים מומלצים</h4>
+            <h4>Recommended Podcasts</h4>
             <a href="/podcasts.html" class="btn btn-outline-primary btn-sm">
-              <i class="bi bi-headphones me-1"></i>צפה בהכל
+              <i class="bi bi-headphones me-1"></i>View All
             </a>
           </div>
           <div id="sidebar-podcasts-container">
@@ -157,26 +159,29 @@
               <div class="spinner-border spinner-border-sm text-primary" role="status">
                 <span class="visually-hidden">Loading...</span>
               </div>
-              <p class="small text-muted mt-2">טוען פודקאסטים...</p>
+              <p class="small text-muted mt-2">Loading podcasts...</p>
             </div>
             <div id="sidebar-podcasts-error" class="alert alert-warning small d-none" role="alert">
               Could not load podcasts.
             </div>
-        <div id="sidebar-podcasts-list"></div>
-        </div>
-        </div>
-
-        <div class="sidebar-section automation-banner mb-5">
-          <a href="https://www.automationbymeir.com/" target="_blank" rel="noopener" class="automation-banner-link">
-            <h4 class="mb-2">Automation by Meir</h4>
-            <p class="small mb-0">Transform your business with custom automation</p>
-          </a>
+            <div id="sidebar-podcasts-list"></div>
+          </div>
         </div>
       </aside>
     </div>
   </main>
 
-  <div id="footer-placeholder"></div>
+  <footer class="footer">
+      <div class="container">
+          <div class="row">
+              <div class="col-md-3 mb-4 mb-md-0"><h5 id="footer-site-title">TrendingTech Daily</h5><p id="footer-description" class="small text-muted">Stay informed...</p></div>
+              <div class="col-md-3 mb-4 mb-md-0"><h5>Quick Links</h5><ul class="footer-links"><li><a href="/">Home</a></li><li><a href="/about.html">About Us</a></li><li><a href="/privacy.html">Privacy Policy</a></li><li><a href="/terms.html">Terms of Service</a></li></ul></div>
+              <div class="col-md-3 mb-4 mb-md-0"><h5>Categories</h5><ul class="footer-links" id="footer-categories-list"><li class="text-muted small fst-italic">Coming soon</li></ul></div>
+              <div class="col-md-3"><h5>Contact Us</h5><p class="small"><i class="bi bi-envelope-fill me-1"></i><span id="contact-email">Coming soon</span><br><i class="bi bi-geo-alt-fill me-1"></i><span id="contact-address">Coming soon</span></p><div id="footer-social-links" class="mt-2"></div></div>
+          </div>
+          <div class="copyright"> <span id="footer-text">2025 TrendingTech Daily.</span></div>
+      </div>
+  </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -184,10 +189,6 @@
   <script src="js/index-main.js"></script>
   <script src="js/index-features.js"></script>
   <script src="js/ai-agent.js" defer></script>
-  <script src="/js/config.js"></script>
-    <script src="/js/auth.js"></script>
-    <script src="/js/nav-loader.js"></script>
-    <script src="js/index-he.js"></script>
 <!-- SINGLE AI-AGENT CONTAINER -->
 <div class="ai-agent-container" id="aiAgentContainer">
   <button class="ai-agent-button" id="aiAgentButton" aria-label="AI Tech News Assistant">

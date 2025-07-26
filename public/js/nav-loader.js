@@ -20,8 +20,25 @@ function initializeNavigation() {
       .catch(error => console.error(`Error loading content for ${placeholderId}:`, error));
   };
 
+  const categoryTranslations = {
+    'AI': 'בינה מלאכותית',
+    'Gadgets': 'גאדג\'טים',
+    'Startups': 'סטארטאפים',
+    'Crypto': 'מטבעות קריפטו',
+    'Security': 'אבטחה',
+    'General': 'כללי'
+  };
+
+  const translateCategory = (name) => {
+    if (window.language === 'he') {
+      return categoryTranslations[name] || name;
+    }
+    return name;
+  };
+
   // Load the navigation, then initialize all its interactive elements
-  loadHTML('/nav.html', 'navbar-placeholder', () => {
+  const navFile = window.language === 'he' ? '/nav-he.html' : '/nav.html';
+  loadHTML(navFile, 'navbar-placeholder', () => {
     // These are now guaranteed to run after nav.html is in the DOM
     initializeSearch();
     initializeResponsiveCategories();
@@ -34,7 +51,8 @@ function initializeNavigation() {
   });
 
   // Load the footer
-  loadHTML('/footer.html', 'footer-placeholder', () => {
+  const footerFile = window.language === 'he' ? '/footer-he.html' : '/footer.html';
+  loadHTML(footerFile, 'footer-placeholder', () => {
     // After footer is loaded, populate categories if Firebase is ready
     if (typeof firebase !== 'undefined' && firebase.apps.length) {
       loadFooterCategories();
@@ -161,6 +179,8 @@ function initializeResponsiveCategories() {
     const navbarNav = document.querySelector('#navbarMain .navbar-nav');
     const moreDropdownMenu = document.getElementById('more-dropdown-menu');
     const moreDropdown = document.getElementById('more-dropdown');
+    const podcastsLabel = window.language === 'he' ? 'פודקאסטים' : 'Podcasts';
+    const stocksLabel = window.language === 'he' ? 'מניות' : 'Stocks';
 
     if (!navbarNav) {
       console.error('Navbar nav element not found');
@@ -186,7 +206,7 @@ function initializeResponsiveCategories() {
       const a = document.createElement('a');
       a.className = 'nav-link';
       a.href = `/${cat.slug}`;
-      a.textContent = cat.name;
+      a.textContent = translateCategory(cat.name);
       li.appendChild(a);
       
       if (insertBeforeElement) {
@@ -205,7 +225,7 @@ function initializeResponsiveCategories() {
         const a = document.createElement('a');
         a.className = 'dropdown-item';
         a.href = `/${cat.slug}`;
-        a.textContent = cat.name;
+        a.textContent = translateCategory(cat.name);
         li.appendChild(a);
         moreDropdownMenu.appendChild(li);
       });
@@ -215,7 +235,7 @@ function initializeResponsiveCategories() {
       const podcastsLink = document.createElement('a');
       podcastsLink.className = 'dropdown-item';
       podcastsLink.href = '/podcasts.html';
-      podcastsLink.innerHTML = '<i class="bi bi-mic me-1"></i>Podcasts';
+      podcastsLink.innerHTML = `<i class="bi bi-mic me-1"></i>${podcastsLabel}`;
       podcastsLi.appendChild(podcastsLink);
       moreDropdownMenu.appendChild(podcastsLi);
 
@@ -223,7 +243,7 @@ function initializeResponsiveCategories() {
       const stocksLink = document.createElement('a');
       stocksLink.className = 'dropdown-item';
       stocksLink.href = '/stock-data.html';
-      stocksLink.innerHTML = '<i class="bi bi-graph-up me-1"></i>Stocks';
+      stocksLink.innerHTML = `<i class="bi bi-graph-up me-1"></i>${stocksLabel}`;
       stocksLi.appendChild(stocksLink);
       moreDropdownMenu.appendChild(stocksLi);
 
@@ -243,7 +263,7 @@ function initializeResponsiveCategories() {
       const stockLink = document.createElement('a');
       stockLink.className = 'nav-link';
       stockLink.href = '/stock-data.html';
-      stockLink.innerHTML = '<i class="bi bi-graph-up me-1"></i>Stocks';
+      stockLink.innerHTML = `<i class="bi bi-graph-up me-1"></i>${stocksLabel}`;
       stockLi.appendChild(stockLink);
       
       // Insert stocks link after categories but before More dropdown
@@ -303,16 +323,16 @@ function loadFooterCategories() {
         snapshot.forEach(doc => {
           const category = doc.data();
           const slug = category.slug || category.name.toLowerCase().replace(/\s+/g, '-');
-          categoriesHTML += `<li><a href="/${slug}">${category.name}</a></li>`;
+          categoriesHTML += `<li><a href="/${slug}">${translateCategory(category.name)}</a></li>`;
         });
         footerCategoriesList.innerHTML = categoriesHTML;
       } else {
         // Use default categories
         footerCategoriesList.innerHTML = `
-          <li><a href="/ai">AI</a></li>
-          <li><a href="/gadgets">Gadgets</a></li>
-          <li><a href="/startups">Startups</a></li>
-          <li><a href="/crypto">Crypto</a></li>
+          <li><a href="/ai">${translateCategory('AI')}</a></li>
+          <li><a href="/gadgets">${translateCategory('Gadgets')}</a></li>
+          <li><a href="/startups">${translateCategory('Startups')}</a></li>
+          <li><a href="/crypto">${translateCategory('Crypto')}</a></li>
         `;
       }
     })
