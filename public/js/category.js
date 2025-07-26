@@ -133,9 +133,7 @@ function loadCategoryArticles(categoryId, categorySlug) {
                 const readingTime = getSafe(() => article.readingTimeMinutes);
                 const articleSlug = getSafe(() => article.slug, '');
                 
-                const articleUrl = window.language === 'he'
-                    ? `/article-he.html?slug=${articleSlug}`
-                    : `/${categorySlug}/${articleSlug}`;
+                const articleUrl = `/${categorySlug}/${articleSlug}`;
 
                 articlesHTML += `
                     <div class="col-md-6 mb-4">
