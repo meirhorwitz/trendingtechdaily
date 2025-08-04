@@ -25,6 +25,30 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Source+Serif+Pro:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/styles.css">
     <link rel="stylesheet" href="/css/ai-agent.css">
+
+    <!-- SEO Meta Tags -->
+    <link id="canonicalLink" rel="canonical" href="https://trendingtechdaily.com/" />
+    <meta name="description" content="Latest technology news and insights" />
+    <meta property="og:title" id="ogTitle" content="TrendingTech Daily" />
+    <meta property="og:description" id="ogDescription" content="Latest technology news and insights" />
+    <meta property="og:url" id="ogUrl" content="https://trendingtechdaily.com/" />
+    <meta name="twitter:title" id="twitterTitle" content="TrendingTech Daily" />
+    <meta name="twitter:description" id="twitterDescription" content="Latest technology news and insights" />
+
+    <script>
+    function updateMetaTags(articleData) {
+        const baseUrl = 'https://trendingtechdaily.com';
+        const articleUrl = `${baseUrl}/${articleData.category}/${articleData.slug}`;
+
+        document.getElementById('canonicalLink').href = articleUrl;
+        document.title = `${articleData.title} - TrendingTech Daily`;
+        document.getElementById('ogTitle').content = articleData.title;
+        document.getElementById('ogDescription').content = articleData.description || 'Read the latest technology news and insights on TrendingTech Daily';
+        document.getElementById('ogUrl').content = articleUrl;
+        document.getElementById('twitterTitle').content = articleData.title;
+        document.getElementById('twitterDescription').content = articleData.description || 'Read the latest technology news and insights on TrendingTech Daily';
+    }
+    </script>
     
     <!-- Article Code Snippet Styles -->
     <link rel="stylesheet" href="/css/article-code.css">
