@@ -58,6 +58,14 @@ function loadCategory(slug) {
 
             // Update page elements
             document.title = `${category.name} Articles - TrendingTech Daily`;
+
+            if (typeof updateMetaTags === 'function') {
+                updateMetaTags({
+                    title: category.name,
+                    description: category.description || '',
+                    slug
+                });
+            }
             
             const categoryTitle = document.getElementById('category-title');
             if (categoryTitle) {

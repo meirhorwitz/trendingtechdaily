@@ -20,10 +20,34 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=IBM+Plex+Sans:wght@400;600&family=Fira+Code&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    
+
     <link rel="stylesheet" href="styles.css">
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8142734137865758"
      crossorigin="anonymous"></script>
+
+    <!-- SEO Meta Tags -->
+    <link id="canonicalLink" rel="canonical" href="https://trendingtechdaily.com/" />
+    <meta name="description" content="Latest technology news and insights" />
+    <meta property="og:title" id="ogTitle" content="TrendingTech Daily" />
+    <meta property="og:description" id="ogDescription" content="Latest technology news and insights" />
+    <meta property="og:url" id="ogUrl" content="https://trendingtechdaily.com/" />
+    <meta name="twitter:title" id="twitterTitle" content="TrendingTech Daily" />
+    <meta name="twitter:description" id="twitterDescription" content="Latest technology news and insights" />
+
+    <script>
+    function updateMetaTags(categoryData) {
+        const baseUrl = 'https://trendingtechdaily.com';
+        const categoryUrl = `${baseUrl}/${categoryData.slug}`;
+
+        document.getElementById('canonicalLink').href = categoryUrl;
+        document.title = `${categoryData.title} - TrendingTech Daily`;
+        document.getElementById('ogTitle').content = categoryData.title;
+        document.getElementById('ogDescription').content = categoryData.description || 'Read the latest technology news and insights on TrendingTech Daily';
+        document.getElementById('ogUrl').content = categoryUrl;
+        document.getElementById('twitterTitle').content = categoryData.title;
+        document.getElementById('twitterDescription').content = categoryData.description || 'Read the latest technology news and insights on TrendingTech Daily';
+    }
+    </script>
 </head>
 <body>
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-M68CNVMQ"
