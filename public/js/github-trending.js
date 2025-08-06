@@ -45,13 +45,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const description = repo.description ? repo.description.substring(0, 80) : '';
         li.innerHTML = `
           <div class="d-flex justify-content-between align-items-start">
-            <div class="flex-grow-1 me-2">
-              <a href="${repo.html_url}" target="_blank" rel="noopener" class="fw-semibold">
+            <div class="flex-grow-1 me-2 repo-info">
+              <a href="${repo.html_url}" target="_blank" rel="noopener" class="fw-semibold repo-name">
                 ${repo.full_name}
               </a>
-              <p class="small mb-0 text-muted">${description}</p>
+              <p class="small mb-0 text-muted repo-description">${description}</p>
             </div>
-            <span class="badge bg-secondary">★ ${repo.stargazers_count}</span>
+            <span class="badge bg-secondary flex-shrink-0">★ ${repo.stargazers_count}</span>
           </div>
         `;
         listEl.appendChild(li);
