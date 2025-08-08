@@ -185,7 +185,15 @@ function loadSettingsPanel() {
     testBtn.addEventListener('click', async function() {
       setButtonLoading('test-auto-article-btn', true);
       try {
-        await firebase.functions().httpsCallable('testGenerateArticle')();
+        const token = await firebase.auth().currentUser.getIdToken();
+        const response = await fetch('https://us-central1-trendingtech-daily.cloudfunctions.net/testGenerateArticle', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        if (!response.ok) throw new Error('Failed to generate article');
         showToast('Test article generated successfully', 'success');
       } catch (err) {
         console.error('Error generating test article:', err);

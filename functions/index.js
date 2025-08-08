@@ -4,6 +4,7 @@ const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https")
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { logger } = require("./config");
 const cors = require("cors")({ origin: true });
+const { requireAdmin } = require("./middleware/auth");
 
 // === API (Express App) ===
 const apiApp = require("./api");
@@ -34,7 +35,7 @@ const { handleArticleRouting, handleLegacyRedirects, handleDynamicRouting } = re
 //const { debugRouting } = require("./debug-routing");
 
 // Routing functions
-exports.handleArticleRouting = onRequest({ 
+exports.handleArticleRouting = onRequest({
   region: "us-central1",
   maxInstances: 10,
   memory: "256MiB",
@@ -131,4 +132,5 @@ exports.testGenerateArticle = onCall({ secrets: ["NEWS_API_KEY", "GEMINI_API_KEY
     throw new HttpsError('internal', 'Failed to generate article');
   }
 });
+
 logger.info("All active function modules loaded and exported successfully.");
