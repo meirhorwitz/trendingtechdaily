@@ -4,6 +4,7 @@ const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https")
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { logger } = require("./config");
 const cors = require("cors")({ origin: true });
+const { requireAdmin } = require("./middleware/auth");
 
 // === API (Express App) ===
 const apiApp = require("./api");
@@ -104,29 +105,47 @@ exports.scheduledNewsFetch = onSchedule({ schedule: "every 4 hours", region: "us
   }
 });
 
-exports.autoGenerateArticle = onSchedule({ schedule: "every 1 hours", region: "us-central1", secrets: ["NEWS_API_KEY", "GEMINI_API_KEY"] }, async () => {
+exports.autoGenerateArticle = onSchedule({ schedule: "every 1 hours", region: "us-central1", secrets: ["NEWS_API_KEY", "GEMINI_API_KEY", "GROK_API_KEY", "SMTP_USER", "SMTP_PASS", "SMTP_HOST", "SMTP_PORT", "ARTICLE_NOTIFY_EMAIL"] }, async () => {
   try {
     const freqEnv = parseInt(process.env.AUTO_ARTICLE_FREQUENCY, 10);
     const frequency = isNaN(freqEnv) ? 3 : Math.min(Math.max(freqEnv, 1), 3);
-    const shouldRun = await shouldGenerateArticle(frequency);
-    if (!shouldRun) return;
-    await generateArticle(process.env.NEWS_API_KEY);
-    logger.info("Auto-generated tech article successfully.");
+    const { shouldGenerate, articlesPerRun } = await shouldGenerateArticle(frequency, 1);
+    if (!shouldGenerate) return;
+    for (let i = 0; i < articlesPerRun; i++) {
+      await generateArticle(process.env.NEWS_API_KEY);
+    }
+    logger.info(`Auto-generated ${articlesPerRun} tech article(s) successfully.`);
   } catch (error) {
     logger.error("Error auto-generating article:", error);
   }
 });
 
-exports.testGenerateArticle = onCall({ secrets: ["NEWS_API_KEY", "GEMINI_API_KEY"], region: "us-central1" }, async (request) => {
-  if (!request.auth || request.auth.token.admin !== true) {
-    throw new HttpsError('permission-denied', 'Admin privileges required');
+exports.testGenerateArticle = onRequest(
+  {
+    secrets: [
+      "NEWS_API_KEY",
+      "GEMINI_API_KEY",
+      "GROK_API_KEY",
+      "SMTP_USER",
+      "SMTP_PASS",
+      "SMTP_HOST",
+      "SMTP_PORT",
+      "ARTICLE_NOTIFY_EMAIL",
+    ],
+    region: "us-central1",
+  },
+  (req, res) => {
+    cors(req, res, () => {
+      requireAdmin(req, res, async () => {
+        try {
+          await generateArticle(process.env.NEWS_API_KEY);
+          res.json({ success: true });
+        } catch (error) {
+          logger.error("Error in testGenerateArticle:", error);
+          res.status(500).json({ error: "Failed to generate article" });
+        }
+      });
+    });
   }
-  try {
-    await generateArticle(process.env.NEWS_API_KEY);
-    return { success: true };
-  } catch (error) {
-    logger.error('Error in testGenerateArticle:', error);
-    throw new HttpsError('internal', 'Failed to generate article');
-  }
-});
+);
 logger.info("All active function modules loaded and exported successfully.");
