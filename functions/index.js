@@ -104,20 +104,22 @@ exports.scheduledNewsFetch = onSchedule({ schedule: "every 4 hours", region: "us
   }
 });
 
-exports.autoGenerateArticle = onSchedule({ schedule: "every 1 hours", region: "us-central1", secrets: ["NEWS_API_KEY", "GEMINI_API_KEY"] }, async () => {
+exports.autoGenerateArticle = onSchedule({ schedule: "every 1 hours", region: "us-central1", secrets: ["NEWS_API_KEY", "GEMINI_API_KEY", "GROK_API_KEY", "SMTP_USER", "SMTP_PASS", "SMTP_HOST", "SMTP_PORT", "ARTICLE_NOTIFY_EMAIL"] }, async () => {
   try {
     const freqEnv = parseInt(process.env.AUTO_ARTICLE_FREQUENCY, 10);
     const frequency = isNaN(freqEnv) ? 3 : Math.min(Math.max(freqEnv, 1), 3);
-    const shouldRun = await shouldGenerateArticle(frequency);
-    if (!shouldRun) return;
-    await generateArticle(process.env.NEWS_API_KEY);
-    logger.info("Auto-generated tech article successfully.");
+    const { shouldGenerate, articlesPerRun } = await shouldGenerateArticle(frequency, 1);
+    if (!shouldGenerate) return;
+    for (let i = 0; i < articlesPerRun; i++) {
+      await generateArticle(process.env.NEWS_API_KEY);
+    }
+    logger.info(`Auto-generated ${articlesPerRun} tech article(s) successfully.`);
   } catch (error) {
     logger.error("Error auto-generating article:", error);
   }
 });
 
-exports.testGenerateArticle = onCall({ secrets: ["NEWS_API_KEY", "GEMINI_API_KEY"], region: "us-central1" }, async (request) => {
+exports.testGenerateArticle = onCall({ secrets: ["NEWS_API_KEY", "GEMINI_API_KEY", "GROK_API_KEY", "SMTP_USER", "SMTP_PASS", "SMTP_HOST", "SMTP_PORT", "ARTICLE_NOTIFY_EMAIL"], region: "us-central1" }, async (request) => {
   if (!request.auth || request.auth.token.admin !== true) {
     throw new HttpsError('permission-denied', 'Admin privileges required');
   }

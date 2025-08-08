@@ -123,6 +123,10 @@ function loadSettingsPanel() {
                     <option value="3">Three Times Daily</option>
                   </select>
                 </div>
+                <div class="mb-3">
+                  <label for="articles-per-run" class="form-label">Articles Per Run</label>
+                  <input type="number" class="form-control" id="articles-per-run" min="1" max="5" value="1">
+                </div>
                 <div class="d-flex">
                   <button type="submit" class="btn btn-primary me-2">Save Auto Article Settings</button>
                   <button type="button" class="btn btn-secondary" id="test-auto-article-btn">Generate Test Article<span class="spinner-border spinner-border-sm d-none ms-1"></span></button>
@@ -172,7 +176,8 @@ function loadSettingsPanel() {
   document.getElementById('auto-article-settings-form').addEventListener('submit', function(e) {
     e.preventDefault();
     const freq = parseInt(document.getElementById('article-frequency').value, 10) || 1;
-    saveAutoArticleFrequency(freq);
+    const count = parseInt(document.getElementById('articles-per-run').value, 10) || 1;
+    saveAutoArticleSettings(freq, count);
   });
 
   const testBtn = document.getElementById('test-auto-article-btn');
@@ -276,6 +281,7 @@ function loadAutoArticleSettings() {
       if (doc.exists) {
         const data = doc.data();
         document.getElementById('article-frequency').value = data.frequency || 1;
+        document.getElementById('articles-per-run').value = data.articlesPerRun || 1;
       }
     })
     .catch(err => {
@@ -283,8 +289,8 @@ function loadAutoArticleSettings() {
     });
 }
 
-function saveAutoArticleFrequency(freq) {
-  settingsCollection.doc('autoArticleSchedule').set({ frequency: freq }, { merge: true })
+function saveAutoArticleSettings(freq, count) {
+  settingsCollection.doc('autoArticleSchedule').set({ frequency: freq, articlesPerRun: count }, { merge: true })
     .then(() => {
       showToast('Auto article settings saved', 'success');
     })
