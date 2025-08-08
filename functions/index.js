@@ -35,7 +35,7 @@ const { handleArticleRouting, handleLegacyRedirects, handleDynamicRouting } = re
 //const { debugRouting } = require("./debug-routing");
 
 // Routing functions
-exports.handleArticleRouting = onRequest({ 
+exports.handleArticleRouting = onRequest({
   region: "us-central1",
   maxInstances: 10,
   memory: "256MiB",
@@ -120,32 +120,17 @@ exports.autoGenerateArticle = onSchedule({ schedule: "every 1 hours", region: "u
   }
 });
 
-exports.testGenerateArticle = onRequest(
-  {
-    secrets: [
-      "NEWS_API_KEY",
-      "GEMINI_API_KEY",
-      "GROK_API_KEY",
-      "SMTP_USER",
-      "SMTP_PASS",
-      "SMTP_HOST",
-      "SMTP_PORT",
-      "ARTICLE_NOTIFY_EMAIL",
-    ],
-    region: "us-central1",
-  },
-  (req, res) => {
-    cors(req, res, () => {
-      requireAdmin(req, res, async () => {
-        try {
-          await generateArticle(process.env.NEWS_API_KEY);
-          res.json({ success: true });
-        } catch (error) {
-          logger.error("Error in testGenerateArticle:", error);
-          res.status(500).json({ error: "Failed to generate article" });
-        }
-      });
-    });
+exports.testGenerateArticle = onCall({ secrets: ["NEWS_API_KEY", "GEMINI_API_KEY", "GROK_API_KEY", "SMTP_USER", "SMTP_PASS", "SMTP_HOST", "SMTP_PORT", "ARTICLE_NOTIFY_EMAIL"], region: "us-central1" }, async (request) => {
+  if (!request.auth || request.auth.token.admin !== true) {
+    throw new HttpsError('permission-denied', 'Admin privileges required');
   }
-);
+  try {
+    await generateArticle(process.env.NEWS_API_KEY);
+    return { success: true };
+  } catch (error) {
+    logger.error('Error in testGenerateArticle:', error);
+    throw new HttpsError('internal', 'Failed to generate article');
+  }
+});
+
 logger.info("All active function modules loaded and exported successfully.");
