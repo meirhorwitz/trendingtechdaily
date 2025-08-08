@@ -1,6 +1,7 @@
 // functions/scheduledArticles.js
 
 const fetch = require('node-fetch');
+const nodemailer = require('nodemailer');
 const { logger, db } = require('./config');
 const aiCallables = require('./callable/ai');
 const articlesAdmin = require('./admin/articles');
@@ -40,23 +41,78 @@ async function fetchTechQuote() {
   return '';
 }
 
-async function shouldGenerateArticle(defaultFrequency) {
+async function determineArticleTopic(newsApiKey) {
+  if (Math.random() < 0.5) {
+    try {
+      const suggestion = await aiCallables.suggestArticleTopic({
+        auth: { uid: 'scheduler' },
+        data: { prompt: 'technology news, tech guides, company overviews, or stock market updates' }
+      });
+      if (suggestion && suggestion.topic) {
+        return suggestion.topic;
+      }
+    } catch (err) {
+      logger.error('Failed to get topic from Grok:', err);
+    }
+  }
+  return await fetchTechHeadline(newsApiKey);
+}
+
+async function shouldGenerateArticle(defaultFrequency, defaultArticlesPerRun = 1) {
   const docRef = db.doc(CONFIG_DOC);
   const snap = await docRef.get();
   const now = Date.now();
   const oneDay = 24 * 60 * 60 * 1000;
   let data = snap.exists ? snap.data() : {};
   const frequency = data.frequency || defaultFrequency || 1;
+  const articlesPerRun = data.articlesPerRun || defaultArticlesPerRun;
   const last = data.lastGeneratedAt
     ? (data.lastGeneratedAt.toMillis ? data.lastGeneratedAt.toMillis() : new Date(data.lastGeneratedAt).getTime())
     : 0;
-  if (now - last < oneDay / frequency) return false;
-  await docRef.set({ lastGeneratedAt: new Date(now), frequency }, { merge: true });
-  return true;
+  const shouldGenerate = now - last >= oneDay / frequency;
+  if (shouldGenerate) {
+    await docRef.set({ lastGeneratedAt: new Date(now), frequency, articlesPerRun }, { merge: true });
+  }
+  return { shouldGenerate, articlesPerRun };
+}
+
+async function sendNotificationEmail(articleId, article) {
+  const to = process.env.ARTICLE_NOTIFY_EMAIL || 'info@trendingtechdaily.com';
+  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
+  const port = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 465;
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+
+  if (!user || !pass) {
+    logger.error('SMTP credentials not configured; skipping notification email');
+    return;
+  }
+
+  const transporter = nodemailer.createTransport({
+    host,
+    port,
+    secure: port === 465,
+    auth: { user, pass },
+  });
+
+  const approvalUrl = `https://trendingtechdaily.com/admin/articles/${articleId}`;
+  const mailOptions = {
+    from: user,
+    to,
+    subject: `New Auto-Generated Article: ${article.title}`,
+    html: `<p>A new article has been generated and is awaiting approval.</p><p><strong>${article.title}</strong></p><p><a href="${approvalUrl}">Review Article</a></p>`,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    logger.info(`Notification email sent for article ${articleId}`);
+  } catch (err) {
+    logger.error('Failed to send notification email:', err);
+  }
 }
 
 async function generateArticle(newsApiKey) {
-  const headline = await fetchTechHeadline(newsApiKey);
+  const headline = await determineArticleTopic(newsApiKey);
   const aiContent = await aiCallables.generateArticleContent({ auth: { uid: 'scheduler' }, data: { prompt: headline } });
   if (aiContent.error) {
     logger.error('AI content generation failed:', aiContent.message);
@@ -67,7 +123,7 @@ async function generateArticle(newsApiKey) {
   let content = aiContent.content;
   if (quote) content += `<blockquote>${quote}</blockquote>`;
   const readingTime = estimateReadingTime(content);
-  await articlesAdmin.createArticle({
+  const article = await articlesAdmin.createArticle({
     title: aiContent.title,
     slug: aiContent.slug,
     excerpt: aiContent.excerpt,
@@ -76,9 +132,11 @@ async function generateArticle(newsApiKey) {
     featuredImage: imageData.imageUrl,
     imageAltText: imageData.imageAltText,
     content,
-    published: true,
+    published: false,
     readingTimeMinutes: readingTime,
   });
+
+  await sendNotificationEmail(article.id, article);
 }
 
 module.exports = { shouldGenerateArticle, generateArticle };
