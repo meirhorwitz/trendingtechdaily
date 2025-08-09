@@ -105,18 +105,41 @@ function initializeSearch() {
  * Initializes responsive category loading and handling from Firebase.
  */
 function initializeResponsiveCategories() {
-  const fetchCategoriesFromDB = async () => {
-    try {
-      if (typeof firebase === 'undefined' || !firebase.apps.length) {
-        console.warn("Firebase not initialized yet for categories");
-        return [];
+  const DEFAULT_CATEGORIES = [
+    { name: 'AI', slug: 'ai', order: 1 },
+    { name: 'Gadgets', slug: 'gadgets', order: 2 },
+    { name: 'Startups', slug: 'startups', order: 3 },
+    { name: 'Crypto', slug: 'crypto', order: 4 }
+  ];
+
+  // Wait for Firebase to be ready before trying to fetch categories
+  const waitForFirebase = () => new Promise(resolve => {
+    let attempts = 0;
+    const maxAttempts = 30; // ~3 seconds total
+    const interval = setInterval(() => {
+      if (typeof firebase !== 'undefined' && firebase.apps.length) {
+        clearInterval(interval);
+        resolve(true);
+      } else if (++attempts >= maxAttempts) {
+        clearInterval(interval);
+        resolve(false);
       }
-      
+    }, 100);
+  });
+
+  const fetchCategoriesFromDB = async () => {
+    const firebaseReady = await waitForFirebase();
+    if (!firebaseReady) {
+      console.warn("Firebase not initialized yet for categories; using defaults");
+      return DEFAULT_CATEGORIES;
+    }
+
+    try {
       const db = firebase.firestore();
-      
+
       // Try 'categories' collection first
       let snapshot = await db.collection('categories').orderBy('order', 'asc').get();
-      
+
       // If categories collection is empty, try 'sections' collection
       if (snapshot.empty) {
         console.log("No documents in 'categories' collection, trying 'sections'");
@@ -125,15 +148,9 @@ function initializeResponsiveCategories() {
 
       if (snapshot.empty) {
         console.warn("No categories found in either 'categories' or 'sections' collections");
-        // Fallback to default categories
-        return [
-          { name: 'AI', slug: 'ai', order: 1 },
-          { name: 'Gadgets', slug: 'gadgets', order: 2 },
-          { name: 'Startups', slug: 'startups', order: 3 },
-          { name: 'Crypto', slug: 'crypto', order: 4 }
-        ];
+        return DEFAULT_CATEGORIES;
       }
-      
+
       const categories = [];
       snapshot.forEach(doc => {
         const data = doc.data();
@@ -144,19 +161,14 @@ function initializeResponsiveCategories() {
           order: data.order || 999
         });
       });
-      
+
       console.log('Categories loaded:', categories);
       return categories;
 
     } catch (error) {
       console.error("Error fetching categories from Firebase:", error);
       // Return default categories as fallback
-      return [
-        { name: 'AI', slug: 'ai', order: 1 },
-        { name: 'Gadgets', slug: 'gadgets', order: 2 },
-        { name: 'Startups', slug: 'startups', order: 3 },
-        { name: 'Crypto', slug: 'crypto', order: 4 }
-      ];
+      return DEFAULT_CATEGORIES;
     }
   };
 
