@@ -62,9 +62,17 @@
       statusEl.innerHTML = 'Generating article... <span class="spinner-border spinner-border-sm"></span>';
       previewEl.innerHTML = '';
       try {
-        const fn = functions.httpsCallable('generateTopTenArticle');
-        const res = await fn({ topic });
-        const data = res.data;
+        const token = await firebase.auth().currentUser.getIdToken();
+        const response = await fetch('https://us-central1-trendingtech-daily.cloudfunctions.net/generateTopTenArticle', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ topic })
+        });
+        if (!response.ok) throw new Error(`Request failed with status ${response.status}`);
+        const data = await response.json();
         const readingTime = this.estimateReadingTime(data.content);
         await articlesCollection.add({
           title: data.title,

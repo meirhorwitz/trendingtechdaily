@@ -2,7 +2,7 @@
 
 const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
-const { logger } = require("./config");
+const { logger, admin } = require("./config");
 const cors = require("cors")({ origin: true });
 const { requireAdmin } = require("./middleware/auth");
 
@@ -75,7 +75,31 @@ exports.generateArticleContent = onCall({ secrets: ["GEMINI_API_KEY"], timeoutSe
 exports.rephraseText = onCall({ secrets: ["GEMINI_API_KEY"], region: "us-central1" }, aiCallables.rephraseText);
 exports.suggestArticleTopic = onCall({ secrets: ["GROK_API_KEY"], region: "us-central1" }, aiCallables.suggestArticleTopic);
 exports.generateArticleImage = onCall({ secrets: ["GEMINI_API_KEY", "UNSPLASH_ACCESS_KEY"], region: "us-central1", timeoutSeconds: 60 }, aiCallables.generateArticleImage);
-exports.generateTopTenArticle = onCall({ secrets: ["GEMINI_API_KEY", "UNSPLASH_ACCESS_KEY"], region: "us-central1", timeoutSeconds: 300 }, aiCallables.generateTopTenArticle);
+exports.generateTopTenArticle = onRequest({ secrets: ["GEMINI_API_KEY", "UNSPLASH_ACCESS_KEY"], region: "us-central1", timeoutSeconds: 300 }, async (req, res) => {
+  cors(req, res, async () => {
+    try {
+      const authHeader = req.headers.authorization || "";
+      const match = authHeader.match(/^Bearer (.+)$/);
+      if (!match) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+      let decoded;
+      try {
+        decoded = await admin.auth().verifyIdToken(match[1]);
+      } catch (err) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+      const data = typeof req.body === "object" ? req.body : {};
+      const result = await aiCallables.generateTopTenArticle({ data, auth: { uid: decoded.uid, token: decoded } });
+      res.json(result);
+    } catch (err) {
+      logger.error("generateTopTenArticle HTTP error:", err);
+      res.status(500).json({ error: err.message || "Failed to generate top list article" });
+    }
+  });
+});
 exports.getStockDataForCompanies = onCall({ secrets: ["FINNHUB_API_KEY"], region: "us-central1" }, aiCallables.getStockDataForCompanies);
 exports.readArticleAloud = onCall({ secrets: ["GEMINI_API_KEY"], region: "us-central1", timeoutSeconds: 60 }, aiCallables.readArticleAloud);
 exports.generateAIAgentResponse = onCall({ secrets: ["GEMINI_API_KEY"], region: "us-central1", timeoutSeconds: 120 }, toolCallables.generateAIAgentResponse);
