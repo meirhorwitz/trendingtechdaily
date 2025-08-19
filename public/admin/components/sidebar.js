@@ -7,6 +7,9 @@ function initSidebar() {
       <a href="#articles" class="nav-link active" data-section="articles">
         <i class="bi bi-file-text me-2"></i>Articles
       </a>
+      <a href="#top10" class="nav-link" data-section="top10">
+        <i class="bi bi-list-ol me-2"></i>Top 10 Generator
+      </a>
       <a href="#sections" class="nav-link" data-section="sections">
         <i class="bi bi-grid me-2"></i>Sections
       </a>
@@ -63,6 +66,9 @@ function initSidebar() {
         case "articles":
           loadArticlesSection();
           break;
+        case "top10":
+          loadTop10Generator();
+          break;
         case "sections":
           loadSectionsManager();
           break;
@@ -95,7 +101,33 @@ function initSidebar() {
       }
     })
   );
-  
+
+  window.loadTop10Generator = function() {
+    const contentArea = document.getElementById("content-area");
+    contentArea.innerHTML = '<div id="top10-generator-container" class="section-container text-center p-5">Loading... <span class="spinner-border"></span></div>';
+
+    if (window.Top10Generator) {
+      const comp = new window.Top10Generator();
+      comp.render('top10-generator-container');
+    } else {
+      const script = document.createElement('script');
+      script.type = 'text/javascript';
+      script.src = '/admin/components/top10.js';
+      script.onload = function() {
+        if (window.Top10Generator) {
+          const comp = new window.Top10Generator();
+          comp.render('top10-generator-container');
+        } else {
+          contentArea.innerHTML = '<div class="alert alert-danger">Failed to load generator.</div>';
+        }
+      };
+      script.onerror = function() {
+        contentArea.innerHTML = '<div class="alert alert-danger">Failed to load generator.</div>';
+      };
+      document.head.appendChild(script);
+    }
+  };
+
   // Add the email marketing functions
   window.loadEmailCampaigns = function() {
     const contentArea = document.getElementById("content-area");
