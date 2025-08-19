@@ -75,6 +75,7 @@ exports.generateArticleContent = onCall({ secrets: ["GEMINI_API_KEY"], timeoutSe
 exports.rephraseText = onCall({ secrets: ["GEMINI_API_KEY"], region: "us-central1" }, aiCallables.rephraseText);
 exports.suggestArticleTopic = onCall({ secrets: ["GROK_API_KEY"], region: "us-central1" }, aiCallables.suggestArticleTopic);
 exports.generateArticleImage = onCall({ secrets: ["GEMINI_API_KEY", "UNSPLASH_ACCESS_KEY"], region: "us-central1", timeoutSeconds: 60 }, aiCallables.generateArticleImage);
+exports.generateTopTenArticle = onCall({ secrets: ["GEMINI_API_KEY", "UNSPLASH_ACCESS_KEY"], region: "us-central1", timeoutSeconds: 300 }, aiCallables.generateTopTenArticle);
 exports.getStockDataForCompanies = onCall({ secrets: ["FINNHUB_API_KEY"], region: "us-central1" }, aiCallables.getStockDataForCompanies);
 exports.readArticleAloud = onCall({ secrets: ["GEMINI_API_KEY"], region: "us-central1", timeoutSeconds: 60 }, aiCallables.readArticleAloud);
 exports.generateAIAgentResponse = onCall({ secrets: ["GEMINI_API_KEY"], region: "us-central1", timeoutSeconds: 120 }, toolCallables.generateAIAgentResponse);

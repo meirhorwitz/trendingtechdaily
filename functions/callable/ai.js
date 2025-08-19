@@ -397,6 +397,89 @@ Output ONLY the SVG code starting with <svg and ending with </svg>. No explanati
     };
 }
 
+// --- generateTopTenArticle ---
+async function generateTopTenArticle(request) {
+    if (!request.auth) {
+        throw new HttpsError("unauthenticated", "Authentication required.");
+    }
+
+    const topic = request.data && request.data.topic;
+    const count = request.data && request.data.count ? parseInt(request.data.count, 10) : 10;
+    if (!topic || typeof topic !== 'string' || topic.trim() === '') {
+        throw new HttpsError("invalid-argument", "A non-empty 'topic' string is required.");
+    }
+
+    try {
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey) throw new HttpsError("internal", "GEMINI_API_KEY not configured.");
+
+        const sdkLoaded = await loadGeminiSDK();
+        const { GoogleGenerativeAI } = getGeminiSDK();
+        if (!sdkLoaded || !GoogleGenerativeAI) throw new HttpsError("internal", "Core AI SDK failed to load.");
+
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", safetySettings: getSafetySettings() });
+
+        const structuredPrompt = `Create a top ${count} list article about "${topic}" for a technology news website.
+
+Requirements:
+- Provide a brief introductory paragraph (key: intro).
+- Provide exactly ${count} list items (key: items) where each item has: title, paragraph, imagePrompt, imageAltText.
+- Provide a concluding paragraph (key: conclusion).
+- Provide relevant tags (key: tags) and a URL-friendly slug (key: slug).
+Output ONLY JSON with keys: title, slug, intro, items, conclusion, tags.`;
+
+        const result = await model.generateContent(structuredPrompt);
+        const response = await result.response;
+        let rawText = response.text();
+        rawText = rawText.replace(/```json\s*/g, '').replace(/```/g, '').trim();
+        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error("No JSON object in AI response");
+
+        const parsed = JSON.parse(jsonMatch[0]);
+        if (!parsed.title || !Array.isArray(parsed.items)) {
+            throw new Error("Parsed JSON missing required fields");
+        }
+
+        for (const item of parsed.items) {
+            try {
+                const imgRes = await generateArticleImage({
+                    auth: request.auth,
+                    data: { prompt: item.imagePrompt || `${item.title} illustration`, articleTitle: item.title }
+                });
+                item.imageUrl = imgRes.imageUrl;
+                item.imageAltText = imgRes.imageAltText;
+            } catch (e) {
+                logger.error("Image generation failed for item", item.title, e);
+                item.imageUrl = '';
+            }
+        }
+
+        let content = '';
+        if (parsed.intro) content += `<p>${parsed.intro}</p>`;
+        parsed.items.forEach((item, idx) => {
+            content += `<h2>${idx + 1}. ${item.title}</h2>`;
+            if (item.imageUrl) content += `<p><img src="${item.imageUrl}" alt="${item.imageAltText || ''}"></p>`;
+            content += `<p>${item.paragraph}</p>`;
+        });
+        if (parsed.conclusion) content += `<p>${parsed.conclusion}</p>`;
+
+        const excerpt = parsed.intro ? parsed.intro.substring(0, 157) + '...' : '';
+
+        return {
+            title: parsed.title,
+            slug: parsed.slug || parsed.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+            content,
+            excerpt,
+            tags: parsed.tags || [],
+            items: parsed.items
+        };
+    } catch (err) {
+        logger.error('generateTopTenArticle error:', err);
+        throw new HttpsError('internal', err.message || 'Failed to generate top list article');
+    }
+}
+
 // --- getStockDataForCompanies (Placeholder - Implement your logic) ---
 async function getStockDataForCompanies(request) {
     if (!request.auth) throw new HttpsError("unauthenticated", "Authentication required.");
@@ -438,6 +521,7 @@ module.exports = {
   rephraseText,
   suggestArticleTopic,
   generateArticleImage,
+  generateTopTenArticle,
   getStockDataForCompanies,
   readArticleAloud,
 };
