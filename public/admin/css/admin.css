@@ -267,3 +267,12 @@ select {
     max-width: 100%;
     height: auto;
 }
+
+/* Ensure generated article images aren't excessively large */
+.article-body-content img {
+    max-width: 600px;
+    width: 100%;
+    height: auto;
+    display: block;
+    margin: 1rem auto;
+}
