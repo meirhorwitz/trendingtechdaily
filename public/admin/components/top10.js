@@ -23,6 +23,10 @@
           <label for="top10-category" class="form-label">Category</label>
           <select id="top10-category" class="form-select"></select>
         </div>
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="checkbox" id="top10-publish">
+          <label class="form-check-label" for="top10-publish">Publish immediately</label>
+        </div>
         <button type="button" class="btn btn-primary" id="generate-top10-btn">Generate Article</button>
         <div id="top10-status" class="mt-3"></div>
         <div id="top10-preview" class="mt-4"></div>
@@ -52,6 +56,7 @@
     async handleGenerate(){
       const topicInput = document.getElementById('top10-topic');
       const category = document.getElementById('top10-category').value;
+      const publish = document.getElementById('top10-publish').checked;
       const statusEl = document.getElementById('top10-status');
       const previewEl = document.getElementById('top10-preview');
       const topic = topicInput.value.trim();
@@ -74,7 +79,7 @@
         if (!response.ok) throw new Error(`Request failed with status ${response.status}`);
         const data = await response.json();
         const readingTime = this.estimateReadingTime(data.content);
-        await articlesCollection.add({
+        const articleData = {
           title: data.title,
           slug: data.slug,
           content: data.content,
@@ -83,11 +88,20 @@
           featuredImage: data.items && data.items[0] ? data.items[0].imageUrl : '',
           imageAltText: data.items && data.items[0] ? data.items[0].imageAltText : '',
           category,
-          published: false,
+          published: publish,
           readingTimeMinutes: readingTime,
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        statusEl.innerHTML = '<div class="text-success">Article generated and saved.</div>';
+        };
+        if (publish) {
+          articleData.publishedAt = firebase.firestore.FieldValue.serverTimestamp();
+        }
+        await articlesCollection.add(articleData);
+        if (publish) {
+          const viewUrl = `/${category}/${data.slug}`;
+          statusEl.innerHTML = `<div class="text-success">Article generated and published. <a href="${viewUrl}" target="_blank">View</a></div>`;
+        } else {
+          statusEl.innerHTML = '<div class="text-success">Article generated and saved.</div>';
+        }
         previewEl.innerHTML = data.content;
       } catch(err){
         console.error('Error generating top 10 article', err);
