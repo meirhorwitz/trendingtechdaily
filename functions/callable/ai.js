@@ -424,7 +424,7 @@ async function generateTopTenArticle(request) {
 
 Requirements:
 - Provide a brief introductory paragraph (key: intro).
-- Provide exactly ${count} list items (key: items) where each item has: title, paragraph, imagePrompt, imageAltText.
+- Provide exactly ${count} list items (key: items) where each item has: title, a detailed paragraph of at least 80 words, imagePrompt, imageAltText.
 - Provide a concluding paragraph (key: conclusion).
 - Provide relevant tags (key: tags) and a URL-friendly slug (key: slug).
 Output ONLY JSON with keys: title, slug, intro, items, conclusion, tags.`;
@@ -459,7 +459,7 @@ Output ONLY JSON with keys: title, slug, intro, items, conclusion, tags.`;
         if (parsed.intro) content += `<p>${parsed.intro}</p>`;
         parsed.items.forEach((item, idx) => {
             content += `<h2>${idx + 1}. ${item.title}</h2>`;
-            if (item.imageUrl) content += `<p><img src="${item.imageUrl}" alt="${item.imageAltText || ''}"></p>`;
+            if (item.imageUrl) content += `<p><img src="${item.imageUrl}" alt="${item.imageAltText || ''}" class="img-fluid"></p>`;
             content += `<p>${item.paragraph}</p>`;
         });
         if (parsed.conclusion) content += `<p>${parsed.conclusion}</p>`;
