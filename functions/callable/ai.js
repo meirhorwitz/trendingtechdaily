@@ -424,10 +424,10 @@ async function generateTopTenArticle(request) {
 
 Requirements:
 - Provide a brief introductory paragraph (key: intro).
-- Provide exactly ${count} list items (key: items) where each item has: title, a detailed paragraph of at least 80 words, imagePrompt, imageAltText.
+- Provide exactly ${count} list items (key: items) where each item has: title, a detailed paragraph of at least 80 words, imagePrompt, imageAltText, and url (the official website or resource link when applicable).
 - Provide a concluding paragraph (key: conclusion).
 - Provide relevant tags (key: tags) and a URL-friendly slug (key: slug).
-Output ONLY JSON with keys: title, slug, intro, items, conclusion, tags.`;
+Output ONLY JSON with keys: title, slug, intro, items, conclusion, tags. Each item should include a "url" field when recommending a website or resource.`;
 
         const result = await model.generateContent(structuredPrompt);
         const response = await result.response;
@@ -458,7 +458,11 @@ Output ONLY JSON with keys: title, slug, intro, items, conclusion, tags.`;
         let content = '';
         if (parsed.intro) content += `<p>${parsed.intro}</p>`;
         parsed.items.forEach((item, idx) => {
-            content += `<h2>${idx + 1}. ${item.title}</h2>`;
+            const itemUrl = item.url || item.link || item.website;
+            const titleWithLink = itemUrl
+                ? `<a href="${itemUrl}" target="_blank" rel="noopener noreferrer">${item.title}</a>`
+                : item.title;
+            content += `<h2>${idx + 1}. ${titleWithLink}</h2>`;
             if (item.imageUrl) content += `<p><img src="${item.imageUrl}" alt="${item.imageAltText || ''}" class="img-fluid"></p>`;
             content += `<p>${item.paragraph}</p>`;
         });
