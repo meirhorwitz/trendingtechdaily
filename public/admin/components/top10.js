@@ -102,7 +102,13 @@
         } else {
           statusEl.innerHTML = '<div class="text-success">Article generated and saved.</div>';
         }
-        previewEl.innerHTML = data.content;
+        previewEl.innerHTML = `
+          <article>
+            <header class="article-header mb-3">
+              <h1 class="article-title">${data.title}</h1>
+            </header>
+            <div class="article-body-content">${data.content}</div>
+          </article>`;
       } catch(err){
         console.error('Error generating top 10 article', err);
         statusEl.innerHTML = '<div class="text-danger">Failed to generate article.</div>';

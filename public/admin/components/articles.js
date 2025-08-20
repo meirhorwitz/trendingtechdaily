@@ -74,9 +74,14 @@ if (typeof window.articlesManagerInitialized === 'undefined') {
             <div class="section-container">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h3>Manage Articles</h3>
-                    <button id="new-article-btn" class="btn btn-primary">
-                        <i class="bi bi-plus-circle me-2"></i>New Article
-                    </button>
+                    <div>
+                        <button id="top10-article-btn" class="btn btn-outline-secondary me-2">
+                            <i class="bi bi-list-ol me-2"></i>Top 10 Article
+                        </button>
+                        <button id="new-article-btn" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-2"></i>New Article
+                        </button>
+                    </div>
                 </div>
                 <div class="row mb-3">
                     <div class="col-md-6">
@@ -111,6 +116,16 @@ if (typeof window.articlesManagerInitialized === 'undefined') {
         contentArea.innerHTML = articlesHTML;
 
         document.getElementById('new-article-btn')?.addEventListener('click', () => openArticleEditor());
+
+        document.getElementById('top10-article-btn')?.addEventListener('click', () => {
+            if (typeof loadTop10Generator === 'function') {
+                loadTop10Generator();
+                document.querySelectorAll('#admin-sidebar .nav-link').forEach(l => l.classList.remove('active'));
+                document.querySelector('#admin-sidebar .nav-link[data-section="top10"]')?.classList.add('active');
+            } else {
+                alert('Top 10 generator not available.');
+            }
+        });
 
         const searchInput = document.getElementById('article-search');
         if (searchInput) {
