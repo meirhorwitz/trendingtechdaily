@@ -3,7 +3,7 @@ const { logger } = require('../config');
 
 async function fetchImageFromUnsplash(query, accessKey) {
   if (!accessKey) return null;
-  const url = `https://api.unsplash.com/photos/random?orientation=landscape&query=${encodeURIComponent(query)}&client_id=${accessKey}`;
+  const url = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&orientation=landscape&per_page=1&order_by=relevant&client_id=${accessKey}`;
   try {
     const res = await fetch(url);
     if (!res.ok) {
@@ -12,9 +12,14 @@ async function fetchImageFromUnsplash(query, accessKey) {
       return null;
     }
     const data = await res.json();
+    const photo = data.results && data.results[0];
+    if (!photo) {
+      logger.warn('Unsplash search returned no results for query:', query);
+      return null;
+    }
     return {
-      imageUrl: data.urls && (data.urls.regular || data.urls.full || data.urls.raw),
-      altText: data.alt_description || data.description || query,
+      imageUrl: photo.urls && (photo.urls.regular || photo.urls.full || photo.urls.raw),
+      altText: photo.alt_description || photo.description || query,
     };
   } catch (err) {
     logger.error('Unsplash fetch error:', err);

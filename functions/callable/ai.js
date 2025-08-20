@@ -443,9 +443,12 @@ Output ONLY JSON with keys: title, slug, intro, items, conclusion, tags. Each it
 
         for (const item of parsed.items) {
             try {
+                const prompt = item.imagePrompt
+                    ? `${item.imagePrompt} ${topic}`
+                    : `${item.title} ${topic} technology`;
                 const imgRes = await generateArticleImage({
                     auth: request.auth,
-                    data: { prompt: item.imagePrompt || `${item.title} illustration`, articleTitle: item.title }
+                    data: { prompt, articleTitle: item.title }
                 });
                 item.imageUrl = imgRes.imageUrl;
                 item.imageAltText = imgRes.imageAltText;
