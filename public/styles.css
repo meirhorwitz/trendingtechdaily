@@ -615,12 +615,21 @@ main > .container > section {
   display: block; 
 }
 
-.article-page-featured-image { 
-  display: block; 
-  width: 100%; 
-  height: auto; 
-  object-fit: cover; 
-  max-height: 60vh; 
+.article-page-featured-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  max-height: 60vh;
+}
+
+/* Ensure inline article images are not overly large */
+.article-body-content img {
+  max-width: 600px;
+  width: 100%;
+  height: auto;
+  display: block;
+  margin: var(--spacing-md) auto;
 }
 
 /* Utility classes */
