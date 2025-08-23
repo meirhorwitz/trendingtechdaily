@@ -38,6 +38,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Load latest stock news
     loadStockNews();
+    loadCryptoData();
+    loadMarketPodcasts();
+    loadRecommendedStockArticles();
 });
 
 function initStockDataPage() {
@@ -472,6 +475,51 @@ function createMarketStockCard(symbol, stockInfo, isInWatchlist) {
         });
     }
     
+    return card;
+}
+
+// Create premarket stock card (no watchlist controls)
+function createPremarketStockCard(symbol, stockInfo) {
+    const card = document.createElement('div');
+    card.className = 'stock-card';
+
+    const logoUrl = stockInfo.logoUrl || '';
+    const hasLogo = logoUrl && logoUrl !== '';
+
+    if (stockInfo.error) {
+        card.classList.add('error-card');
+        card.innerHTML = `
+            <div class="stock-header">
+                <div class="stock-header-title">
+                    ${hasLogo ? `<img src="${logoUrl}" alt="${symbol}" class="stock-logo" onerror="this.style.display='none'">` : ''}
+                    <h3>${symbol}</h3>
+                </div>
+            </div>
+            <div class="stock-name">${stockInfo.name || symbol}</div>
+            <div class="error-message">Unable to load stock data</div>
+        `;
+    } else {
+        const price = stockInfo.c || 0;
+        const prevClose = stockInfo.pc || 0;
+        const change = price - prevClose;
+        const changePercent = prevClose ? (change / prevClose) * 100 : 0;
+        const isPositive = change >= 0;
+
+        card.innerHTML = `
+            <div class="stock-header">
+                <div class="stock-header-title">
+                    ${hasLogo ? `<img src="${logoUrl}" alt="${symbol}" class="stock-logo" onerror="this.style.display='none'">` : ''}
+                    <h3>${symbol}</h3>
+                </div>
+            </div>
+            <div class="stock-name">${stockInfo.name || symbol}</div>
+            <div class="stock-price">$${price.toFixed(2)}</div>
+            <div class="stock-change ${isPositive ? 'positive' : 'negative'}">
+                ${isPositive ? '+' : ''}${change.toFixed(2)} (${isPositive ? '+' : ''}${changePercent.toFixed(2)}%)
+            </div>
+        `;
+    }
+
     return card;
 }
 
@@ -985,26 +1033,54 @@ function initPremarketDrawer() {
 async function loadPremarketData(symbols) {
     const premarketData = document.getElementById('premarket-data');
     const premarketLoader = document.getElementById('premarket-loader');
-    
     if (!premarketData) return;
-    
+
     premarketData.innerHTML = '';
     if (premarketLoader) premarketLoader.style.display = 'block';
-    
+
     try {
         const now = new Date();
         const hour = now.getHours();
         const isPreMarketHours = hour >= 4 && hour < 9.5;
-        
+
         if (!isPreMarketHours) {
             premarketData.innerHTML = '<div class="no-data">Premarket data is only available between 4:00 AM and 9:30 AM Eastern Time.</div>';
             if (premarketLoader) premarketLoader.style.display = 'none';
             return;
         }
-        
-        // In a real implementation, you would fetch actual premarket data
-        // For now, show a message
-        premarketData.innerHTML = '<div class="no-data">Premarket data coming soon.</div>';
+
+        const logoMap = {};
+        STOCK_SYMBOLS.forEach(stock => {
+            logoMap[stock.symbol] = { name: stock.name, logoUrl: stock.logoUrl };
+        });
+
+        const dataMap = {};
+        await Promise.all(symbols.map(async (symbol, index) => {
+            try {
+                await new Promise(resolve => setTimeout(resolve, index * 300));
+                const url = `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${FINNHUB_API_KEY}`;
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`Error fetching ${symbol}: ${response.status}`);
+                const data = await response.json();
+                if (logoMap[symbol]) {
+                    data.name = logoMap[symbol].name;
+                    data.logoUrl = logoMap[symbol].logoUrl;
+                } else {
+                    data.name = symbol;
+                    data.logoUrl = '';
+                }
+                dataMap[symbol] = data;
+            } catch (err) {
+                console.error(`Error fetching ${symbol}:`, err);
+                dataMap[symbol] = { error: true, name: logoMap[symbol]?.name || symbol, logoUrl: logoMap[symbol]?.logoUrl || '' };
+            }
+        }));
+
+        symbols.forEach(symbol => {
+            const info = dataMap[symbol];
+            const card = createPremarketStockCard(symbol, info);
+            premarketData.appendChild(card);
+        });
     } catch (error) {
         console.error('Error loading premarket data:', error);
         premarketData.innerHTML = '<div class="error-message">Failed to fetch premarket data.</div>';
@@ -1075,6 +1151,148 @@ async function loadStockNews() {
             errorEl.textContent = 'Failed to load news.';
             errorEl.style.display = 'block';
         }
+    }
+}
+
+// Load cryptocurrency prices using CoinGecko API
+async function loadCryptoData() {
+    const container = document.getElementById('crypto-data');
+    const loader = document.getElementById('crypto-loader');
+    if (!container) return;
+
+    container.innerHTML = '';
+    if (loader) loader.style.display = 'block';
+
+    try {
+        const coins = [
+            { id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', image: 'https://assets.coingecko.com/coins/images/1/large/bitcoin.png' },
+            { id: 'ethereum', symbol: 'ETH', name: 'Ethereum', image: 'https://assets.coingecko.com/coins/images/279/large/ethereum.png' },
+            { id: 'solana', symbol: 'SOL', name: 'Solana', image: 'https://assets.coingecko.com/coins/images/4128/large/solana.png' }
+        ];
+        const ids = coins.map(c => c.id).join(',');
+        const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`);
+        if (!response.ok) throw new Error('Failed to fetch crypto prices');
+        const data = await response.json();
+
+        coins.forEach(coin => {
+            const info = data[coin.id];
+            if (!info) return;
+            const price = info.usd || 0;
+            const change = info.usd_24h_change || 0;
+            const isPositive = change >= 0;
+            const card = document.createElement('div');
+            card.className = 'stock-card';
+            card.innerHTML = `
+                <div class="stock-header">
+                    <div class="stock-header-title">
+                        <img src="${coin.image}" alt="${coin.symbol}" class="stock-logo" onerror="this.style.display='none'">
+                        <h3>${coin.symbol}</h3>
+                    </div>
+                </div>
+                <div class="stock-name">${coin.name}</div>
+                <div class="stock-price">$${price.toFixed(2)}</div>
+                <div class="stock-change ${isPositive ? 'positive' : 'negative'}">${isPositive ? '+' : ''}${change.toFixed(2)}%</div>
+            `;
+            container.appendChild(card);
+        });
+    } catch (error) {
+        console.error('Error loading crypto data:', error);
+        container.innerHTML = '<div class="error-message">Failed to load crypto prices.</div>';
+    } finally {
+        if (loader) loader.style.display = 'none';
+    }
+}
+
+// Load market podcasts via Spotify API (Cloud Function)
+async function loadMarketPodcasts() {
+    const container = document.getElementById('market-podcasts-list');
+    const loader = document.getElementById('market-podcasts-loader');
+    const errorEl = document.getElementById('market-podcasts-error');
+    if (!container) return;
+
+    container.innerHTML = '';
+    if (loader) loader.style.display = 'block';
+    if (errorEl) errorEl.textContent = '';
+
+    try {
+        if (typeof functions === 'undefined') throw new Error('Functions service not available');
+        const callable = functions.httpsCallable('getTechPodcasts');
+        const result = await callable({ query: 'stock market podcast', limit: 4 });
+        const podcasts = (result.data && result.data.podcasts) ? result.data.podcasts : [];
+        renderMarketPodcasts(podcasts);
+    } catch (error) {
+        console.error('Error loading podcasts:', error);
+        if (errorEl) errorEl.textContent = 'Failed to load podcasts.';
+    } finally {
+        if (loader) loader.style.display = 'none';
+    }
+}
+
+function renderMarketPodcasts(podcasts) {
+    const container = document.getElementById('market-podcasts-list');
+    if (!container) return;
+    if (!podcasts || podcasts.length === 0) {
+        container.innerHTML = '<p class="text-muted small">No podcasts available.</p>';
+        return;
+    }
+    let html = '';
+    podcasts.forEach(podcast => {
+        const imageUrl = podcast.imageUrl || '/img/default-podcast-art.png';
+        const name = podcast.name || 'Untitled Podcast';
+        const publisher = podcast.publisher || '';
+        const url = podcast.spotifyUrl || '#';
+        html += `
+            <a href="${url}" target="_blank" rel="noopener noreferrer" class="sidebar-podcast-item">
+                <img src="${imageUrl}" alt="${name}" class="sidebar-podcast-image" onerror="this.onerror=null; this.src='/img/default-podcast-art.png';">
+                <div class="sidebar-podcast-content">
+                    <div class="sidebar-podcast-title">${name}</div>
+                    <div class="sidebar-podcast-publisher">${publisher}</div>
+                </div>
+            </a>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+// Load recommended stock market articles from Firestore
+async function loadRecommendedStockArticles() {
+    const container = document.getElementById('stock-articles-list');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    try {
+        if (typeof db === 'undefined') throw new Error('Database not available');
+        const sectionSnap = await db.collection('sections').where('slug', '==', 'stock-market').limit(1).get();
+        if (sectionSnap.empty) {
+            container.innerHTML = '<p class="text-muted small">No articles found.</p>';
+            return;
+        }
+        const sectionId = sectionSnap.docs[0].id;
+        const articlesSnap = await db.collection('articles')
+            .where('category', '==', sectionId)
+            .where('published', '==', true)
+            .orderBy('createdAt', 'desc')
+            .limit(5)
+            .get();
+
+        if (articlesSnap.empty) {
+            container.innerHTML = '<p class="text-muted small">No articles found.</p>';
+            return;
+        }
+
+        let html = '';
+        articlesSnap.forEach(doc => {
+            const data = doc.data();
+            const title = data.title || 'Untitled';
+            const slug = data.slug || '';
+            const url = `/stock-market/${slug}`;
+            html += `<div class="mb-2"><a href="${url}" class="text-decoration-none">${title}</a></div>`;
+        });
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Error loading articles:', error);
+        container.innerHTML = '<p class="text-danger small">Failed to load articles.</p>';
     }
 }
 

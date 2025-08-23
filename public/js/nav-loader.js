@@ -20,20 +20,29 @@ function initializeNavigation() {
       .catch(error => console.error(`Error loading content for ${placeholderId}:`, error));
   };
 
-  const translateCategory = (name) => name;
-
-  // Load the navigation, then initialize all its interactive elements
+  const navAlreadyLoaded = document.getElementById('navbarMain');
   const navFile = '/nav.html';
-  loadHTML(navFile, 'navbar-placeholder', () => {
-    // These are now guaranteed to run after nav.html is in the DOM
-    initializeSearch();
-    initializeResponsiveCategories();
 
-    // Initialize user authentication state if the function exists
+  if (navAlreadyLoaded) {
+    // If the navbar is already present, re-run interactive helpers only
+    initializeSearch();
+    if (!document.getElementById('more-dropdown') ||
+      document.getElementById('category-nav-placeholder')?.previousElementSibling?.id === 'more-dropdown') {
+      initializeResponsiveCategories();
+    }
     if (window.initializeAuth) {
       window.initializeAuth();
     }
-  });
+  } else {
+    // Load the navigation, then initialize all its interactive elements
+    loadHTML(navFile, 'navbar-placeholder', () => {
+      initializeSearch();
+      initializeResponsiveCategories();
+      if (window.initializeAuth) {
+        window.initializeAuth();
+      }
+    });
+  }
 
   // Load the footer
   const footerFile = '/footer.html';
@@ -111,46 +120,45 @@ function initializeResponsiveCategories() {
     { name: 'Startups', slug: 'startups', order: 3 },
     { name: 'Crypto', slug: 'crypto', order: 4 }
   ];
-
-  // Wait for Firebase to be ready before trying to fetch categories
-  const waitForFirebase = () => new Promise(resolve => {
-    let attempts = 0;
-    const maxAttempts = 30; // ~3 seconds total
-    const interval = setInterval(() => {
-      if (typeof firebase !== 'undefined' && firebase.apps.length) {
-        clearInterval(interval);
-        resolve(true);
-      } else if (++attempts >= maxAttempts) {
-        clearInterval(interval);
-        resolve(false);
-      }
-    }, 100);
-  });
-
+  
+  // Function to get categories from Firebase with a fallback
   const fetchCategoriesFromDB = async () => {
-    const firebaseReady = await waitForFirebase();
-    if (!firebaseReady) {
-      console.warn("Firebase not initialized yet for categories; using defaults");
-      return DEFAULT_CATEGORIES;
-    }
-
     try {
+      // Wait for Firebase to be ready (up to 3 seconds)
+      const firebaseReady = await new Promise(resolve => {
+        let attempts = 0;
+        const interval = setInterval(() => {
+          if (typeof firebase !== 'undefined' && firebase.apps.length) {
+            clearInterval(interval);
+            resolve(true);
+          } else if (++attempts >= 30) {
+            clearInterval(interval);
+            resolve(false);
+          }
+        }, 100);
+      });
+      
+      if (!firebaseReady) {
+        console.warn("Firebase not initialized yet for categories; using defaults");
+        return DEFAULT_CATEGORIES;
+      }
+      
       const db = firebase.firestore();
-
+      
       // Try 'categories' collection first
       let snapshot = await db.collection('categories').orderBy('order', 'asc').get();
-
+      
       // If categories collection is empty, try 'sections' collection
       if (snapshot.empty) {
         console.log("No documents in 'categories' collection, trying 'sections'");
         snapshot = await db.collection('sections').orderBy('order', 'asc').get();
       }
-
+      
       if (snapshot.empty) {
         console.warn("No categories found in either 'categories' or 'sections' collections");
         return DEFAULT_CATEGORIES;
       }
-
+      
       const categories = [];
       snapshot.forEach(doc => {
         const data = doc.data();
@@ -161,13 +169,12 @@ function initializeResponsiveCategories() {
           order: data.order || 999
         });
       });
-
+      
       console.log('Categories loaded:', categories);
       return categories;
-
+      
     } catch (error) {
       console.error("Error fetching categories from Firebase:", error);
-      // Return default categories as fallback
       return DEFAULT_CATEGORIES;
     }
   };
@@ -176,8 +183,6 @@ function initializeResponsiveCategories() {
     const navbarNav = document.querySelector('#navbarMain .navbar-nav');
     const moreDropdownMenu = document.getElementById('more-dropdown-menu');
     const moreDropdown = document.getElementById('more-dropdown');
-    const podcastsLabel = 'Podcasts';
-    const stocksLabel = 'Stocks';
 
     if (!navbarNav) {
       console.error('Navbar nav element not found');
@@ -214,7 +219,7 @@ function initializeResponsiveCategories() {
     // Handle overflow categories in dropdown
     if (moreDropdownMenu && moreDropdown) {
       moreDropdownMenu.innerHTML = '';
-
+      
       hiddenCategories.forEach(cat => {
         const li = document.createElement('li');
         const a = document.createElement('a');
@@ -230,7 +235,7 @@ function initializeResponsiveCategories() {
       const podcastsLink = document.createElement('a');
       podcastsLink.className = 'dropdown-item';
       podcastsLink.href = '/podcasts.html';
-      podcastsLink.innerHTML = `<i class="bi bi-mic me-1"></i>${podcastsLabel}`;
+      podcastsLink.innerHTML = '<i class="bi bi-mic me-1"></i>Podcasts';
       podcastsLi.appendChild(podcastsLink);
       moreDropdownMenu.appendChild(podcastsLi);
 
@@ -238,7 +243,7 @@ function initializeResponsiveCategories() {
       const stocksLink = document.createElement('a');
       stocksLink.className = 'dropdown-item';
       stocksLink.href = '/stock-data.html';
-      stocksLink.innerHTML = `<i class="bi bi-graph-up me-1"></i>${stocksLabel}`;
+      stocksLink.innerHTML = '<i class="bi bi-graph-up me-1"></i>Stocks';
       stocksLi.appendChild(stocksLink);
       moreDropdownMenu.appendChild(stocksLi);
 
@@ -258,7 +263,7 @@ function initializeResponsiveCategories() {
       const stockLink = document.createElement('a');
       stockLink.className = 'nav-link';
       stockLink.href = '/stock-data.html';
-      stockLink.innerHTML = `<i class="bi bi-graph-up me-1"></i>${stocksLabel}`;
+      stockLink.innerHTML = '<i class="bi bi-graph-up me-1"></i>Stocks';
       stockLi.appendChild(stockLink);
       
       // Insert stocks link after categories but before More dropdown
@@ -281,8 +286,7 @@ function initializeResponsiveCategories() {
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimeout);
       resizeTimeout = setTimeout(() => {
-        // Remove existing category items before re-rendering
-        const navbarNav = document.querySelector('#navbarMain .navbar-nav');
+        const navbarNav = document.querySelector("#navbarMain .navbar-nav");
         if (navbarNav) {
           // Remove all category items
           navbarNav.querySelectorAll('[data-category="true"]').forEach(el => el.remove());
@@ -338,6 +342,7 @@ function loadFooterCategories() {
     });
 }
 
+const translateCategory = (name) => name;
 
 // Wait for Firebase to be ready
 document.addEventListener('firebase-ready', () => {
