@@ -24,6 +24,7 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="css/ai-agent.css">
     <link rel="stylesheet" href="css/stock-styles.css">
+    <link rel="stylesheet" href="css/sidebar-podcasts.css">
     
     <style>
         /* Additional styles for search functionality */
@@ -142,77 +143,112 @@
     <div id="navbar-placeholder"></div>
 
     <main class="container mt-5 mb-5">
-        <section id="search-section">
-            <div class="container">
-                <h2>Search Stocks</h2>
-                <div class="search-container">
-                    <input type="text" id="stock-search" placeholder="Enter stock symbol (e.g., AAPL)">
-                    <button id="search-btn">Search</button>
-                    <div id="search-suggestions" class="search-suggestions" style="display: none;"></div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Premarket drawer section -->
-        <section id="premarket-drawer" class="mb-4">
-            <div class="container">
-                <button class="premarket-toggle-btn collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#premarketContent" aria-expanded="false" aria-controls="premarketContent">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h2 class="mb-0">Premarket Data</h2>
-                            <p class="text-muted mb-0 small">Click to view premarket trading activity</p>
-                        </div>
-                        <div class="toggle-icon">
-                            <i class="bi bi-chevron-down"></i>
+        <div class="row">
+            <div class="col-lg-8">
+                <section id="search-section">
+                    <div class="container">
+                        <h2>Search Stocks</h2>
+                        <div class="search-container">
+                            <input type="text" id="stock-search" placeholder="Enter stock symbol (e.g., AAPL)">
+                            <button id="search-btn">Search</button>
+                            <div id="search-suggestions" class="search-suggestions" style="display: none;"></div>
                         </div>
                     </div>
-                </button>
-                
-                <div class="collapse" id="premarketContent">
-                    <div class="premarket-content-wrapper">
-                        <div class="loader" id="premarket-loader"></div>
-                        <div class="error-message" id="premarket-error"></div>
-                        <div class="stock-container" id="premarket-data">
-                            <!-- Premarket stock data will be inserted here -->
+                </section>
+
+                <!-- Premarket drawer section -->
+                <section id="premarket-drawer" class="mb-4">
+                    <div class="container">
+                        <button class="premarket-toggle-btn collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#premarketContent" aria-expanded="false" aria-controls="premarketContent">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h2 class="mb-0">Premarket Data</h2>
+                                    <p class="text-muted mb-0 small">Click to view premarket trading activity</p>
+                                </div>
+                                <div class="toggle-icon">
+                                    <i class="bi bi-chevron-down"></i>
+                                </div>
+                            </div>
+                        </button>
+
+                        <div class="collapse" id="premarketContent">
+                            <div class="premarket-content-wrapper">
+                                <div class="loader" id="premarket-loader"></div>
+                                <div class="error-message" id="premarket-error"></div>
+                                <div class="stock-container" id="premarket-data">
+                                    <!-- Premarket stock data will be inserted here -->
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
-        </section>
+                </section>
 
-        <section id="market">
-            <div class="container">
-                <h2>Market Data</h2>
-                <div class="loader" id="market-loader"></div>
-                <div class="error-message" id="market-error"></div>
-                <div class="stock-container" id="market-data">
-                    <!-- Market stock data will be inserted here -->
-                </div>
-            </div>
-        </section>
+                <section id="market">
+                    <div class="container">
+                        <h2>Market Data</h2>
+                        <div class="loader" id="market-loader"></div>
+                        <div class="error-message" id="market-error"></div>
+                        <div class="stock-container" id="market-data">
+                            <!-- Market stock data will be inserted here -->
+                        </div>
+                    </div>
+                </section>
 
-        <section id="watchlist">
-            <div class="container">
-                <h2>Your Watchlist</h2>
-                <div id="watchlist-stocks">
-                    <!-- Watchlist will be inserted here -->
-                </div>
-                <p class="info-text">Add stocks to your watchlist by clicking the star icon next to any stock.</p>
-            </div>
-        </section>
+                <section id="crypto">
+                    <div class="container">
+                        <h2>Cryptocurrency Prices</h2>
+                        <div class="loader" id="crypto-loader"></div>
+                        <div class="error-message" id="crypto-error"></div>
+                        <div class="stock-container" id="crypto-data"></div>
+                    </div>
+                </section>
 
-        <section id="stock-news" class="mt-5">
-            <div class="container">
-                <h2>Latest Stock News</h2>
-                <div id="stock-news-loading" class="text-center my-3">
-                    <div class="spinner-border" role="status">
-                        <span class="visually-hidden">Loading...</span>
+                <section id="watchlist">
+                    <div class="container">
+                        <h2>Your Watchlist</h2>
+                        <div id="watchlist-stocks">
+                            <!-- Watchlist will be inserted here -->
+                        </div>
+                        <p class="info-text">Add stocks to your watchlist by clicking the star icon next to any stock.</p>
+                    </div>
+                </section>
+
+                <section id="stock-news" class="mt-5">
+                    <div class="container">
+                        <h2>Latest Stock News</h2>
+                        <div id="stock-news-loading" class="text-center my-3">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                        <div id="stock-news-error" class="text-danger mb-3"></div>
+                        <div class="row" id="stock-news-articles"></div>
+                    </div>
+                </section>
+            </div>
+
+            <aside class="col-lg-4 mt-4 mt-lg-0">
+                <div class="card mb-4">
+                    <div class="card-header">Market Podcasts</div>
+                    <div class="card-body">
+                        <div id="market-podcasts-loader" class="text-center my-3">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                        <div id="market-podcasts-error" class="text-danger small"></div>
+                        <div id="market-podcasts-list"></div>
                     </div>
                 </div>
-                <div id="stock-news-error" class="text-danger mb-3"></div>
-                <div class="row" id="stock-news-articles"></div>
-            </div>
-        </section>
+
+                <div class="card">
+                    <div class="card-header">Stock Market Articles</div>
+                    <div class="card-body">
+                        <div id="stock-articles-list" class="list-unstyled"></div>
+                    </div>
+                </div>
+            </aside>
+        </div>
     </main>
 
     <!-- Footer Placeholder -->
