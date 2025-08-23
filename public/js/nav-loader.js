@@ -184,92 +184,72 @@ function initializeResponsiveCategories() {
       return;
     }
 
-    // First, remove any existing category items to prevent duplicates
+    // Remove existing category items to prevent duplicates
     navbarNav.querySelectorAll('[data-category="true"]').forEach(el => el.remove());
-    
-    // Determine how many categories to show based on screen width
-    const maxVisibleCategories = window.innerWidth >= 992 ? 5 : 3;
-    const visibleCategories = categories.slice(0, maxVisibleCategories);
-    const hiddenCategories = categories.slice(maxVisibleCategories);
 
-    // Find where to insert categories (before the More dropdown)
-    const insertBeforeElement = moreDropdown || navbarNav.querySelector('.nav-item:not([data-category="true"])');
-    
-    // Add visible categories
-    visibleCategories.forEach(cat => {
+    // We'll insert all categories first, then move overflowing ones
+    const insertBeforeElement = moreDropdown || null;
+    const categoryElements = [];
+
+    categories.forEach(cat => {
       const li = document.createElement('li');
       li.className = 'nav-item';
-      li.setAttribute('data-category', 'true'); // Mark as category item
+      li.setAttribute('data-category', 'true');
       const a = document.createElement('a');
       a.className = 'nav-link';
       a.href = `/${cat.slug}`;
       a.textContent = translateCategory(cat.name);
       li.appendChild(a);
-      
-      if (insertBeforeElement) {
-        navbarNav.insertBefore(li, insertBeforeElement);
-      } else {
-        navbarNav.appendChild(li);
-      }
+      navbarNav.insertBefore(li, insertBeforeElement);
+      categoryElements.push({ li, cat });
     });
 
-    // Handle overflow categories in dropdown
+    // Add Stock Data link as a category item
+    const stockCat = { name: stocksLabel, slug: 'stock-data.html', icon: '<i class="bi bi-graph-up me-1"></i>' };
+    const stockLi = document.createElement('li');
+    stockLi.className = 'nav-item';
+    stockLi.setAttribute('data-category', 'true');
+    const stockLink = document.createElement('a');
+    stockLink.className = 'nav-link';
+    stockLink.href = '/stock-data.html';
+    stockLink.innerHTML = `${stockCat.icon}${stocksLabel}`;
+    stockLi.appendChild(stockLink);
+    navbarNav.insertBefore(stockLi, insertBeforeElement);
+    categoryElements.push({ li: stockLi, cat: stockCat });
+
+    // Move overflowing categories into the More dropdown
+    const hiddenCategories = [];
+    while (navbarNav.scrollWidth > navbarNav.clientWidth && categoryElements.length) {
+      const { li, cat } = categoryElements.pop();
+      hiddenCategories.unshift(cat);
+      navbarNav.removeChild(li);
+    }
+
     if (moreDropdownMenu && moreDropdown) {
       moreDropdownMenu.innerHTML = '';
+      if (hiddenCategories.length > 0) {
+        hiddenCategories.forEach(cat => {
+          const li = document.createElement('li');
+          const a = document.createElement('a');
+          a.className = 'dropdown-item';
+          a.href = cat.slug === 'stock-data.html' ? '/stock-data.html' : `/${cat.slug}`;
+          a.innerHTML = cat.icon ? `${cat.icon}${translateCategory(cat.name)}` : translateCategory(cat.name);
+          li.appendChild(a);
+          moreDropdownMenu.appendChild(li);
+        });
 
-      hiddenCategories.forEach(cat => {
-        const li = document.createElement('li');
-        const a = document.createElement('a');
-        a.className = 'dropdown-item';
-        a.href = `/${cat.slug}`;
-        a.textContent = translateCategory(cat.name);
-        li.appendChild(a);
-        moreDropdownMenu.appendChild(li);
-      });
+        // Add Podcasts link to the dropdown
+        const podcastsLi = document.createElement('li');
+        const podcastsLink = document.createElement('a');
+        podcastsLink.className = 'dropdown-item';
+        podcastsLink.href = '/podcasts.html';
+        podcastsLink.innerHTML = `<i class="bi bi-mic me-1"></i>${podcastsLabel}`;
+        podcastsLi.appendChild(podcastsLink);
+        moreDropdownMenu.appendChild(podcastsLi);
 
-      // Always include Podcasts and Stock Data links
-      const podcastsLi = document.createElement('li');
-      const podcastsLink = document.createElement('a');
-      podcastsLink.className = 'dropdown-item';
-      podcastsLink.href = '/podcasts.html';
-      podcastsLink.innerHTML = `<i class="bi bi-mic me-1"></i>${podcastsLabel}`;
-      podcastsLi.appendChild(podcastsLink);
-      moreDropdownMenu.appendChild(podcastsLi);
-
-      const stocksLi = document.createElement('li');
-      const stocksLink = document.createElement('a');
-      stocksLink.className = 'dropdown-item';
-      stocksLink.href = '/stock-data.html';
-      stocksLink.innerHTML = `<i class="bi bi-graph-up me-1"></i>${stocksLabel}`;
-      stocksLi.appendChild(stocksLink);
-      moreDropdownMenu.appendChild(stocksLi);
-
-      if (moreDropdownMenu.children.length > 0) {
         moreDropdown.classList.remove('d-none');
       } else {
         moreDropdown.classList.add('d-none');
-      }
-    }
-    
-    // Add Stock Data link after categories (only if not already present)
-    const existingStockLink = navbarNav.querySelector('a[href="/stock-data.html"]');
-    if (!existingStockLink) {
-      const stockLi = document.createElement('li');
-      stockLi.className = 'nav-item';
-      stockLi.setAttribute('data-category', 'true');
-      const stockLink = document.createElement('a');
-      stockLink.className = 'nav-link';
-      stockLink.href = '/stock-data.html';
-      stockLink.innerHTML = `<i class="bi bi-graph-up me-1"></i>${stocksLabel}`;
-      stockLi.appendChild(stockLink);
-      
-      // Insert stocks link after categories but before More dropdown
-      if (moreDropdown) {
-        navbarNav.insertBefore(stockLi, moreDropdown);
-      } else if (insertBeforeElement) {
-        navbarNav.insertBefore(stockLi, insertBeforeElement);
-      } else {
-        navbarNav.appendChild(stockLi);
       }
     }
   };
