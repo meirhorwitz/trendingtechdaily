@@ -216,6 +216,13 @@ function initializeResponsiveCategories() {
     stockLi.appendChild(stockLink);
     navbarNav.insertBefore(stockLi, insertBeforeElement);
     categoryElements.push({ li: stockLi, cat: stockCat });
+    
+    // If the navbar hasn't been sized yet (e.g., collapsed), skip overflow handling
+    if (navbarNav.clientWidth === 0) {
+      if (moreDropdownMenu) moreDropdownMenu.innerHTML = '';
+      if (moreDropdown) moreDropdown.classList.add('d-none');
+      return;
+    }
 
     // Move overflowing categories into the More dropdown
     const hiddenCategories = [];
