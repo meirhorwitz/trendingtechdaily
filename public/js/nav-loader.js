@@ -22,18 +22,29 @@ function initializeNavigation() {
 
   const translateCategory = (name) => name;
 
-  // Load the navigation, then initialize all its interactive elements
+  const navAlreadyLoaded = document.getElementById('navbarMain');
   const navFile = '/nav.html';
-  loadHTML(navFile, 'navbar-placeholder', () => {
-    // These are now guaranteed to run after nav.html is in the DOM
-    initializeSearch();
-    initializeResponsiveCategories();
 
-    // Initialize user authentication state if the function exists
+  if (navAlreadyLoaded) {
+    // If the navbar is already present, re-run interactive helpers only
+    initializeSearch();
+    if (!document.getElementById('more-dropdown') ||
+        document.getElementById('category-nav-placeholder')?.previousElementSibling?.id === 'more-dropdown') {
+      initializeResponsiveCategories();
+    }
     if (window.initializeAuth) {
       window.initializeAuth();
     }
-  });
+  } else {
+    // Load the navigation, then initialize all its interactive elements
+    loadHTML(navFile, 'navbar-placeholder', () => {
+      initializeSearch();
+      initializeResponsiveCategories();
+      if (window.initializeAuth) {
+        window.initializeAuth();
+      }
+    });
+  }
 
   // Load the footer
   const footerFile = '/footer.html';
