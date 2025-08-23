@@ -13,6 +13,9 @@ function initSidebar() {
       <a href="#howto" class="nav-link" data-section="howto">
         <i class="bi bi-tools me-2"></i>How-To Generator
       </a>
+      <a href="#bulk" class="nav-link" data-section="bulk">
+        <i class="bi bi-stack me-2"></i>Bulk Generator
+      </a>
       <a href="#sections" class="nav-link" data-section="sections">
         <i class="bi bi-grid me-2"></i>Sections
       </a>
@@ -74,6 +77,9 @@ function initSidebar() {
           break;
         case "howto":
           loadHowToGenerator();
+          break;
+        case "bulk":
+          loadBulkGenerator();
           break;
         case "sections":
           loadSectionsManager();
@@ -149,6 +155,32 @@ function initSidebar() {
         if (window.HowToGenerator) {
           const comp = new window.HowToGenerator();
           comp.render('howto-generator-container');
+        } else {
+          contentArea.innerHTML = '<div class="alert alert-danger">Failed to load generator.</div>';
+        }
+      };
+      script.onerror = function() {
+        contentArea.innerHTML = '<div class="alert alert-danger">Failed to load generator.</div>';
+      };
+      document.head.appendChild(script);
+    }
+  };
+
+  window.loadBulkGenerator = function() {
+    const contentArea = document.getElementById("content-area");
+    contentArea.innerHTML = '<div id="bulk-generator-container" class="section-container text-center p-5">Loading... <span class="spinner-border"></span></div>';
+
+    if (window.BulkGenerator) {
+      const comp = new window.BulkGenerator();
+      comp.render('bulk-generator-container');
+    } else {
+      const script = document.createElement('script');
+      script.type = 'text/javascript';
+      script.src = '/admin/components/bulk.js';
+      script.onload = function() {
+        if (window.BulkGenerator) {
+          const comp = new window.BulkGenerator();
+          comp.render('bulk-generator-container');
         } else {
           contentArea.innerHTML = '<div class="alert alert-danger">Failed to load generator.</div>';
         }
