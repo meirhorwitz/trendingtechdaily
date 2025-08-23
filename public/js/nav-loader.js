@@ -187,9 +187,7 @@ function initializeResponsiveCategories() {
     // First, remove any existing category items to prevent duplicates
     navbarNav.querySelectorAll('[data-category="true"]').forEach(el => el.remove());
     
-    // Determine how many categories to show based on screen width
-    const maxVisibleCategories = window.innerWidth >= 992 ? 5 : 3;
-    const visibleCategories = categories.slice(0, maxVisibleCategories);
+    // Add all categories directly to the main navbar
     const hiddenCategories = categories.slice(maxVisibleCategories);
 
     // Find where to insert categories (before the More dropdown)
@@ -197,7 +195,7 @@ function initializeResponsiveCategories() {
     
     // Add visible categories
     visibleCategories.forEach(cat => {
-      const li = document.createElement('li');
+ categories.forEach(cat => {
       li.className = 'nav-item';
       li.setAttribute('data-category', 'true'); // Mark as category item
       const a = document.createElement('a');
@@ -289,7 +287,7 @@ function initializeResponsiveCategories() {
           // Remove all category items
           navbarNav.querySelectorAll('[data-category="true"]').forEach(el => el.remove());
           // Re-render categories
-          renderCategories(categories);
+ renderCategories(categories); // Pass the full categories array
         }
       }, 150);
     });
