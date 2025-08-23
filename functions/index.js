@@ -110,29 +110,30 @@ exports.generateHowToArticle = onRequest({
   secrets: ["GEMINI_API_KEY", "UNSPLASH_ACCESS_KEY"],
   region: "us-central1",
   timeoutSeconds: 300,
-  cors: ["https://trendingtech-daily.web.app"],
-}, async (req, res) => {
-  try {
-    const authHeader = req.headers.authorization || "";
-    const match = authHeader.match(/^Bearer (.+)$/);
-    if (!match) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
-    }
-    let decoded;
+}, (req, res) => {
+  cors(req, res, async () => {
     try {
-      decoded = await admin.auth().verifyIdToken(match[1]);
+      const authHeader = req.headers.authorization || "";
+      const match = authHeader.match(/^Bearer (.+)$/);
+      if (!match) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+      let decoded;
+      try {
+        decoded = await admin.auth().verifyIdToken(match[1]);
+      } catch (err) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+      const data = typeof req.body === "object" ? req.body : {};
+      const result = await aiCallables.generateHowToArticle({ data, auth: { uid: decoded.uid, token: decoded } });
+      res.json(result);
     } catch (err) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
+      logger.error("generateHowToArticle HTTP error:", err);
+      res.status(500).json({ error: err.message || "Failed to generate how-to article" });
     }
-    const data = typeof req.body === "object" ? req.body : {};
-    const result = await aiCallables.generateHowToArticle({ data, auth: { uid: decoded.uid, token: decoded } });
-    res.json(result);
-  } catch (err) {
-    logger.error("generateHowToArticle HTTP error:", err);
-    res.status(500).json({ error: err.message || "Failed to generate how-to article" });
-  }
+  });
 });
 
 exports.getStockDataForCompanies = onCall({ secrets: ["FINNHUB_API_KEY"], region: "us-central1" }, aiCallables.getStockDataForCompanies);
