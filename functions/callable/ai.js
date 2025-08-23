@@ -487,6 +487,91 @@ Output ONLY JSON with keys: title, slug, intro, items, conclusion, tags. Each it
     }
 }
 
+// --- generateHowToArticle ---
+async function generateHowToArticle(request) {
+    if (!request.auth) {
+        throw new HttpsError("unauthenticated", "Authentication required.");
+    }
+
+    const topic = request.data && request.data.topic;
+    if (!topic || typeof topic !== 'string' || topic.trim() === '') {
+        throw new HttpsError("invalid-argument", "A non-empty 'topic' string is required.");
+    }
+
+    try {
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey) throw new HttpsError("internal", "GEMINI_API_KEY not configured.");
+
+        const sdkLoaded = await loadGeminiSDK();
+        const { GoogleGenerativeAI } = getGeminiSDK();
+        if (!sdkLoaded || !GoogleGenerativeAI) throw new HttpsError("internal", "Core AI SDK failed to load.");
+
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", safetySettings: getSafetySettings() });
+
+        const structuredPrompt = `Create a step-by-step how-to article about "${topic}" for a technology news website.
+
+Requirements:
+- Provide a brief introductory paragraph (key: intro).
+- Provide an ordered list of steps (key: steps) where each step has: title, a detailed paragraph of at least 80 words, imagePrompt, imageAltText.
+- Provide a concluding paragraph (key: conclusion).
+- Provide relevant tags (key: tags) and a URL-friendly slug (key: slug).
+Output ONLY JSON with keys: title, slug, intro, steps, conclusion, tags.`;
+
+        const result = await model.generateContent(structuredPrompt);
+        const response = await result.response;
+        let rawText = response.text();
+        rawText = rawText.replace(/```json\s*/g, '').replace(/```/g, '').trim();
+        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error("No JSON object in AI response");
+
+        const parsed = JSON.parse(jsonMatch[0]);
+        if (!parsed.title || !Array.isArray(parsed.steps)) {
+            throw new Error("Parsed JSON missing required fields");
+        }
+
+        for (const step of parsed.steps) {
+            try {
+                const prompt = step.imagePrompt
+                    ? `${step.imagePrompt} ${topic}`
+                    : `${step.title} ${topic} technology`;
+                const imgRes = await generateArticleImage({
+                    auth: request.auth,
+                    data: { prompt, articleTitle: step.title }
+                });
+                step.imageUrl = imgRes.imageUrl;
+                step.imageAltText = imgRes.imageAltText;
+            } catch (e) {
+                logger.error("Image generation failed for step", step.title, e);
+                step.imageUrl = '';
+            }
+        }
+
+        let content = '';
+        if (parsed.intro) content += `<p>${parsed.intro}</p>`;
+        parsed.steps.forEach((step, idx) => {
+            content += `<h2>Step ${idx + 1}: ${step.title}</h2>`;
+            if (step.imageUrl) content += `<p><img src="${step.imageUrl}" alt="${step.imageAltText || ''}" class="img-fluid"></p>`;
+            content += `<p>${step.paragraph}</p>`;
+        });
+        if (parsed.conclusion) content += `<p>${parsed.conclusion}</p>`;
+
+        const excerpt = parsed.intro ? parsed.intro.substring(0, 157) + '...' : '';
+
+        return {
+            title: parsed.title,
+            slug: parsed.slug || parsed.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+            content,
+            excerpt,
+            tags: parsed.tags || [],
+            steps: parsed.steps
+        };
+    } catch (err) {
+        logger.error('generateHowToArticle error:', err);
+        throw new HttpsError('internal', err.message || 'Failed to generate how-to article');
+    }
+}
+
 // --- getStockDataForCompanies (Placeholder - Implement your logic) ---
 async function getStockDataForCompanies(request) {
     if (!request.auth) throw new HttpsError("unauthenticated", "Authentication required.");
@@ -529,6 +614,7 @@ module.exports = {
   suggestArticleTopic,
   generateArticleImage,
   generateTopTenArticle,
+  generateHowToArticle,
   getStockDataForCompanies,
   readArticleAloud,
 };
