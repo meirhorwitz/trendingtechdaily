@@ -128,82 +128,102 @@ exports.handleArticleRouting = async (req, res) => {
 /**
  * Handles legacy redirects from old URL structure to new
  */
-exports.handleLegacyRedirects = async (req, res, next) => {
+exports.handleLegacyRedirects = async (req, res) => {
   try {
     const urlPath = req.path;
     const { db } = require("../config");
-    
+
     logger.info(`Processing potential legacy redirect for path: ${urlPath}`);
-    
+
+    const segments = urlPath.split("/").filter(Boolean);
+
+    // Handle legacy URLs of the form /<articleId>/<slug>
+    if (segments.length === 2 && /^[A-Za-z0-9]{20}$/.test(segments[0])) {
+      const [articleId, legacySlug] = segments;
+      logger.info(`Found legacy ID-based URL: ${articleId}`);
+
+      const articleDoc = await db.collection("articles").doc(articleId).get();
+      if (articleDoc.exists && articleDoc.data().published) {
+        const article = articleDoc.data();
+
+        const categoryDoc = await db.collection("sections").doc(article.category).get();
+        const categorySlug = categoryDoc.exists
+          ? categoryDoc.data().slug || article.category.toLowerCase()
+          : article.category.toLowerCase();
+        const articleSlug = article.slug || legacySlug;
+        const newUrl = `/${categorySlug}/${articleSlug}`;
+
+        logger.info(`Redirecting legacy ID-based URL to new format: ${newUrl}`);
+        return res.redirect(301, newUrl);
+      }
+
+      logger.warn(`Article not found for legacy ID: ${articleId}`);
+      return res.status(404).send("Page not found");
+    }
+
     // Handle old article URLs with query parameters
     if (urlPath === "/article.html" && req.query.slug) {
       const slug = req.query.slug;
       logger.info(`Found legacy article URL with slug: ${slug}`);
-      
-      // Look up the article to get its category
+
       const articleSnapshot = await db.collection("articles")
         .where("slug", "==", slug)
         .where("published", "==", true)
         .limit(1)
         .get();
-      
+
       if (!articleSnapshot.empty) {
         const article = articleSnapshot.docs[0].data();
         const articleId = articleSnapshot.docs[0].id;
-        
-        // Get category information
+
         const categoryDoc = await db.collection("sections").doc(article.category).get();
         if (categoryDoc.exists) {
           const category = categoryDoc.data();
           const categorySlug = category.slug || article.category.toLowerCase();
           const newUrl = `/${categorySlug}/${slug}`;
-          
+
           logger.info(`Redirecting old article URL to new format: ${newUrl}`);
           return res.redirect(301, newUrl);
-        } else {
-          logger.warn(`Category not found for article: ${articleId}`);
-          // Fallback: use category ID as slug
-          const newUrl = `/${article.category.toLowerCase()}/${slug}`;
-          return res.redirect(301, newUrl);
         }
-      } else {
-        logger.warn(`Article not found for legacy slug: ${slug}`);
-        // Continue to serve the old article.html page
-        return next();
+
+        logger.warn(`Category not found for article: ${articleId}`);
+        const newUrl = `/${article.category.toLowerCase()}/${slug}`;
+        return res.redirect(301, newUrl);
       }
+
+      logger.warn(`Article not found for legacy slug: ${slug}`);
+      return res.status(404).send("Page not found");
     }
-    
+
     // Handle old article URLs with ID parameter
     if (urlPath === "/article.html" && req.query.id) {
       const articleId = req.query.id;
       logger.info(`Found legacy article URL with ID: ${articleId}`);
-      
-      // Look up the article by ID
+
       const articleDoc = await db.collection("articles").doc(articleId).get();
       if (articleDoc.exists && articleDoc.data().published) {
         const article = articleDoc.data();
-        
-        // Get category information
+
         const categoryDoc = await db.collection("sections").doc(article.category).get();
         if (categoryDoc.exists) {
           const category = categoryDoc.data();
           const categorySlug = category.slug || article.category.toLowerCase();
           const articleSlug = article.slug || articleId;
           const newUrl = `/${categorySlug}/${articleSlug}`;
-          
+
           logger.info(`Redirecting old article ID URL to new format: ${newUrl}`);
           return res.redirect(301, newUrl);
         }
-      } else {
-        logger.warn(`Article not found for legacy ID: ${articleId}`);
-        return next();
       }
+
+      logger.warn(`Article not found for legacy ID: ${articleId}`);
+      return res.status(404).send("Page not found");
     }
 
     // Handle other legacy static page URLs
     const legacyUrls = {
       "/about.html": "/about",
-      "/contact.html": "/contact", 
+      "/contact.html": "/contact",
       "/privacy.html": "/privacy",
       "/terms.html": "/terms",
     };
@@ -214,12 +234,16 @@ exports.handleLegacyRedirects = async (req, res, next) => {
       return res.redirect(301, newUrl);
     }
 
-    // Not a legacy URL, continue to next middleware
-    next();
+    // If this isn't a legacy URL, treat it as a new article route
+    if (segments.length === 2) {
+      return exports.handleArticleRouting(req, res);
+    }
+
+    // Fall back to 404 for any other request
+    return res.status(404).send("Page not found");
   } catch (error) {
     logger.error("Error in legacy redirects:", error);
-    // Don't break the request chain on error
-    next();
+    return res.status(404).send("Page not found");
   }
 };
 
