@@ -4,38 +4,6 @@ const { HttpsError } = require("firebase-functions/v2/https");
 const { logger, db, CONFIG } = require('../config'); 
 const { loadGeminiSDK, getSafetySettings, getSafe, getGeminiSDK, getStockMappingCacheDuration } = require('../utils');
 const fetch = require('node-fetch');
-const { fetchImageFromUnsplash } = require('../services/unsplashService');
-
-// --- Helper function to get fallback colors for SVG generation ---
-function getFallbackImagesForCategory(prompt = "") {
-  // This function now returns color schemes instead of image URLs
-  const promptLower = prompt.toLowerCase();
-  
-  if (promptLower.includes('ai') || promptLower.includes('artificial intelligence') || promptLower.includes('machine learning')) {
-    return ['#4F46E5', '#7C3AED']; // Purple gradient
-  } else if (promptLower.includes('crypto') || promptLower.includes('blockchain') || promptLower.includes('bitcoin')) {
-    return ['#F59E0B', '#EF4444']; // Orange-red gradient
-  } else if (promptLower.includes('cyber') || promptLower.includes('security') || promptLower.includes('privacy')) {
-    return ['#10B981', '#059669']; // Green gradient
-  } else if (promptLower.includes('cloud') || promptLower.includes('server') || promptLower.includes('infrastructure')) {
-    return ['#06B6D4', '#0891B2']; // Cyan gradient
-  } else if (promptLower.includes('data') || promptLower.includes('analytics') || promptLower.includes('database')) {
-    return ['#3B82F6', '#1E40AF']; // Blue gradient
-  } else if (promptLower.includes('mobile') || promptLower.includes('app') || promptLower.includes('smartphone')) {
-    return ['#8B5CF6', '#6366F1']; // Purple-indigo gradient
-  } else if (promptLower.includes('startup') || promptLower.includes('entrepreneur') || promptLower.includes('innovation')) {
-    return ['#EC4899', '#BE185D']; // Pink gradient
-  } else if (promptLower.includes('robot') || promptLower.includes('automation')) {
-    return ['#6B7280', '#374151']; // Gray gradient
-  } else if (promptLower.includes('quantum')) {
-    return ['#7C3AED', '#4C1D95']; // Deep purple gradient
-  } else if (promptLower.includes('network') || promptLower.includes('5g')) {
-    return ['#14B8A6', '#0D9488']; // Teal gradient
-  }
-  
-  // Default technology gradient
-  return ['#6366F1', '#4F46E5']; // Indigo-purple gradient
-}
 
 // --- generateArticleContent (robust JSON parsing for code blocks) ---
 async function generateArticleContent(request) { // request contains { auth, data }
@@ -250,46 +218,27 @@ async function suggestArticleTopic(request) {
     }
 }
 
-// --- generateArticleImage (Gemini-only with generated placeholder) ---
+// --- generateArticleImage (Gemini-generated photos) ---
 async function generateArticleImage(request) {
     if (!request.auth) {
         throw new HttpsError("unauthenticated", "Authentication required.");
     }
-    
-    const { prompt, articleTitle = '', style = 'tech_illustration' } = request.data;
-    
-    if (!prompt || typeof prompt !== 'string' || prompt.trim() === '') {
+
+    const { prompt, articleTitle = "" } = request.data;
+
+    if (!prompt || typeof prompt !== "string" || prompt.trim() === "") {
         throw new HttpsError("invalid-argument", "A non-empty 'prompt' string is required.");
     }
-    
+
     logger.info(`generateArticleImage called for prompt: "${prompt}", title: "${articleTitle}"`);
 
-    let imageUrl = '';
-    let imageAltText = `${articleTitle || prompt} - Technology illustration`;
-    let source = 'unsplash';
-    let message = '';
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+        logger.error("generateArticleImage: GEMINI_API_KEY is not configured.");
+        throw new HttpsError("internal", "GEMINI API Key not configured.");
+    }
 
     try {
-        // First try Unsplash for a high quality photo
-        const unsplashKey = process.env.UNSPLASH_ACCESS_KEY;
-        if (unsplashKey) {
-            const unsplashImage = await fetchImageFromUnsplash(prompt, unsplashKey);
-            if (unsplashImage && unsplashImage.imageUrl) {
-                imageUrl = unsplashImage.imageUrl;
-                imageAltText = unsplashImage.altText || imageAltText;
-                source = 'unsplash';
-                message = 'Image fetched from Unsplash';
-                return { success: true, imageUrl, imageAltText, source, message };
-            }
-        }
-
-        const apiKey = process.env.GEMINI_API_KEY;
-        if (!apiKey) {
-            logger.error("generateArticleImage: GEMINI_API_KEY is not configured.");
-            throw new HttpsError("internal", "GEMINI API Key not configured.");
-        }
-
-        // Try to use Gemini to generate a base64 encoded SVG or simple image
         const sdkLoaded = await loadGeminiSDK();
         const { GoogleGenerativeAI } = getGeminiSDK();
 
@@ -300,101 +249,35 @@ async function generateArticleImage(request) {
 
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({
-            model: "gemini-1.5-pro-latest",
-            safetySettings: getSafetySettings()
+            model: "gemini-1.5-flash",
+            safetySettings: getSafetySettings(),
+            generationConfig: { outputMimeType: "image/png" }
         });
 
-        // Ask Gemini to create an SVG image
-        const svgPrompt = `Create a simple SVG image for this article topic: "${prompt}".
-        
-Generate ONLY the SVG code with these requirements:
-- Size: 1200x600 pixels
-- Use abstract shapes and gradients
-- Tech/modern style with blue, purple, or green colors
-- No text in the image
-- Clean, professional appearance
+        const promptText = `Generate a high-quality technology photo for the article titled "${articleTitle || prompt}".`;
+        const result = await model.generateContent({
+            contents: [{ role: "user", parts: [{ text: promptText }] }]
+        });
 
-Output ONLY the SVG code starting with <svg and ending with </svg>. No explanation or other text.`;
-
-        try {
-            const result = await model.generateContent(svgPrompt);
-            const response = await result.response;
-            const responseText = response.text();
-            
-            logger.info("Gemini SVG response received");
-            
-            // Extract SVG from response
-            const svgMatch = responseText.match(/<svg[\s\S]*?<\/svg>/i);
-            if (svgMatch) {
-                // Convert SVG to base64
-                const svgString = svgMatch[0];
-                const base64Svg = Buffer.from(svgString).toString('base64');
-                imageUrl = `data:image/svg+xml;base64,${base64Svg}`;
-                source = 'gemini-generated-svg';
-                message = 'Generated SVG image using Gemini';
-                logger.info("Successfully generated SVG image");
-            } else {
-                logger.warn("No SVG found in Gemini response");
-                throw new Error("No SVG in response");
-            }
-            
-        } catch (geminiError) {
-            logger.error("Gemini SVG generation error:", geminiError);
-            
-            // Fallback: Generate a simple gradient image using canvas-like approach
-            logger.info("Using fallback gradient generation");
-            
-            // Create a simple SVG gradient based on the topic
-            const colorPairs = getFallbackImagesForCategory(prompt);
-            
-            // Generate SVG with gradient and pattern
-            const svg = `<svg width="1200" height="600" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:${colorPairs[0]};stop-opacity:1" />
-      <stop offset="100%" style="stop-color:${colorPairs[1]};stop-opacity:1" />
-    </linearGradient>
-    <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
-      <path d="M 50 0 L 0 0 0 50" fill="none" stroke="white" stroke-width="1" opacity="0.1"/>
-    </pattern>
-  </defs>
-  <rect width="1200" height="600" fill="url(#grad1)" />
-  <rect width="1200" height="600" fill="url(#grid)" />
-  <circle cx="300" cy="200" r="150" fill="white" opacity="0.1" />
-  <circle cx="900" cy="400" r="200" fill="white" opacity="0.05" />
-  <rect x="100" y="250" width="200" height="100" fill="white" opacity="0.05" transform="rotate(45 200 300)" />
-  <polygon points="600,100 700,300 500,300" fill="white" opacity="0.08" />
-</svg>`;
-            
-            const base64Svg = Buffer.from(svg).toString('base64');
-            imageUrl = `data:image/svg+xml;base64,${base64Svg}`;
-            source = 'generated-gradient';
-            message = 'Generated gradient placeholder image';
+        const part = result?.response?.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+        if (!part || !part.inlineData?.data) {
+            throw new Error("No image returned by Gemini");
         }
-        
+
+        const imageUrl = `data:image/png;base64,${part.inlineData.data}`;
+        const imageAltText = `${articleTitle || prompt} - Generated by Gemini`;
+
+        return {
+            success: true,
+            imageUrl,
+            imageAltText,
+            source: "gemini",
+            message: "Image generated with Gemini"
+        };
     } catch (error) {
         logger.error("Image generation error:", error);
-        
-        // Ultimate fallback: Simple colored rectangle
-        const fallbackSvg = `<svg width="1200" height="600" xmlns="http://www.w3.org/2000/svg">
-  <rect width="1200" height="600" fill="#4F46E5" />
-  <rect x="50" y="50" width="1100" height="500" fill="#6366F1" opacity="0.5" />
-</svg>`;
-        
-        const base64Svg = Buffer.from(fallbackSvg).toString('base64');
-        imageUrl = `data:image/svg+xml;base64,${base64Svg}`;
-        source = 'fallback-gradient';
-        message = 'Using fallback gradient image';
+        throw new HttpsError("internal", "Gemini image generation failed.");
     }
-
-    // Always return a valid image
-    return {
-        success: true,
-        imageUrl,
-        imageAltText,
-        source,
-        message
-    };
 }
 
 // --- generateTopTenArticle ---
