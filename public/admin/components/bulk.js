@@ -58,9 +58,15 @@
       }
       this.resultsEl.innerHTML = '';
       for(const [i,prompt] of prompts.entries()){
+        const wrapper = document.createElement('div');
+        wrapper.className = 'mb-4';
         const status = document.createElement('div');
         status.textContent = `Generating article ${i+1}...`;
-        this.resultsEl.appendChild(status);
+        const preview = document.createElement('div');
+        preview.className = 'mt-3';
+        wrapper.appendChild(status);
+        wrapper.appendChild(preview);
+        this.resultsEl.appendChild(wrapper);
         try{
           const generateContent = functions.httpsCallable('generateArticleContent');
           const contentRes = await generateContent({prompt});
@@ -93,6 +99,16 @@
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
           });
           status.textContent = `Article ${i+1} generated and saved.`;
+          preview.innerHTML = `
+            <article>
+              <header class="article-header mb-3">
+                <h4 class="article-title">${articleData.title}</h4>
+              </header>
+              <div class="d-flex flex-wrap mb-3">
+                ${images.map(url => `<img src="${url}" alt="${articleData.title}" class="img-thumbnail me-2 mb-2" style="max-width:32%;" />`).join('')}
+              </div>
+              <div class="article-body-content">${articleData.content}</div>
+            </article>`;
         } catch(err){
           console.error('Generation error', err);
           status.textContent = `Article ${i+1} failed: ${err.message}`;
