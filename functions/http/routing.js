@@ -13,9 +13,9 @@ function isValidSlug(slug) {
   const slugRegex = /^[a-z0-9-]+$/i;
   
   // Additional validation
-  return slugRegex.test(slug) && 
-         slug.length <= 100 && 
-         slug.length >= 3 &&
+  return slugRegex.test(slug) &&
+         slug.length <= 100 &&
+         slug.length >= 2 &&
          !slug.startsWith('-') &&  // Don't start with hyphen
          !slug.endsWith('-');      // Don't end with hyphen
 }
@@ -41,7 +41,30 @@ exports.handleArticleRouting = async (req, res) => {
       }
       
       logger.info("Valid article route detected:", { categorySlug, articleSlug });
-      
+
+      // Verify article exists before redirecting
+      const { db } = require("../config");
+      const articleSnapshot = await db.collection("articles")
+        .where("slug", "==", articleSlug)
+        .where("published", "==", true)
+        .limit(1)
+        .get();
+
+      if (articleSnapshot.empty) {
+        logger.info(`No published article found for slug: ${articleSlug}`);
+        return res.status(404).sendFile('404.html', { root: 'public' });
+      }
+
+      const article = articleSnapshot.docs[0].data();
+      const categoryDoc = await db.collection("sections").doc(article.category).get();
+      const categoryData = categoryDoc.exists ? categoryDoc.data() : null;
+      const categorySlugFromDb = categoryData ? (categoryData.slug || article.category.toLowerCase()) : null;
+
+      if (categorySlugFromDb !== categorySlug) {
+        logger.info(`Article slug ${articleSlug} does not belong to category ${categorySlug}`);
+        return res.status(404).sendFile('404.html', { root: 'public' });
+      }
+
       // Return HTML that passes routing info to the client
       const articleHtml = `<!DOCTYPE html>
 <html>
@@ -64,7 +87,7 @@ exports.handleArticleRouting = async (req, res) => {
     <p>If you are not redirected, <a href="/article.html">click here</a>.</p>
 </body>
 </html>`;
-      
+
       res.status(200).send(articleHtml);
     } 
     // Check if this is a single-segment path (category)
