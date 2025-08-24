@@ -419,8 +419,7 @@ class AITechAgent {
       const pageInfo = { type: 'general', url: window.location.href, title: document.title, articleTitle: null, articleContentSample: null };
       const pathname = window.location.pathname.toLowerCase();
 
-      const segments = pathname.split('/').filter(Boolean);
-      if (pathname.includes('/article.html') || segments.length === 2) {
+      if (pathname.includes('/article.html') || pathname.startsWith('/article/')) {
           pageInfo.type = 'article';
           const titleElement = document.querySelector('h1.article-title, article h1, .td-post-title .entry-title');
           const contentElement = document.querySelector('.article-body-content, .td-post-content, article .entry-content');

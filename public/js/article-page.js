@@ -384,8 +384,7 @@ async function handlePostRenderActions(article, section) {
         readHistoryRef.set({
             lastReadAt: firebase.firestore.FieldValue.serverTimestamp(),
             articleTitle: getSafe(() => article.title, 'Untitled'),
-            articleSlug: getSafe(() => article.slug, ''),
-            articleCategory: getSafe(() => section?.slug || article.category?.toLowerCase(), '')
+            articleSlug: getSafe(() => article.slug, '')
         }, { merge: true }).catch(err => console.error("Error updating read history:", err));
     }
     
@@ -397,7 +396,7 @@ async function handlePostRenderActions(article, section) {
     
     // Setup save button
     if (currentUser && typeof setupSaveArticleButton === 'function') {
-        setupSaveArticleButton(currentUser, article.id, article, section);
+        setupSaveArticleButton(currentUser, article.id, article);
     }
     
     // Load comments
@@ -407,7 +406,7 @@ async function handlePostRenderActions(article, section) {
     
     // Setup comment form
     if (typeof setupCommentForm === 'function') {
-        setupCommentForm(article, section);
+        setupCommentForm(article);
     }
     
     // Load related articles
@@ -448,7 +447,7 @@ function showError(message) {
 }
 
 // Setup save article button
-async function setupSaveArticleButton(user, articleId, articleData, section) {
+async function setupSaveArticleButton(user, articleId, articleData) {
     const saveBtn = document.getElementById('save-article-btn');
     if (!saveBtn || !user || !articleId || !db) {
         if (saveBtn) saveBtn.style.display = 'none';
@@ -483,8 +482,7 @@ async function setupSaveArticleButton(user, articleId, articleData, section) {
                 await savedDocRef.set({
                     savedAt: firebase.firestore.FieldValue.serverTimestamp(),
                     articleTitle: getSafe(() => articleData.title, 'Untitled'),
-                    articleSlug: getSafe(() => articleData.slug, ''),
-                    articleCategory: getSafe(() => section?.slug || articleData.category?.toLowerCase(), '')
+                    articleSlug: getSafe(() => articleData.slug, '')
                 });
                 isCurrentlySaved = true;
             }
@@ -520,7 +518,7 @@ function updateSaveButtonUI(isSaved) {
 }
 
 // Setup comment form
-function setupCommentForm(article, section) {
+function setupCommentForm(article) {
     const commentFormContainer = document.getElementById('comment-form-container');
     const commentLoginPrompt = document.getElementById('comment-login-prompt');
     const commentForm = document.getElementById('comment-form');
@@ -534,8 +532,7 @@ function setupCommentForm(article, section) {
             // Clone to remove existing listeners
             const newForm = commentForm.cloneNode(true);
             commentForm.parentNode.replaceChild(newForm, commentForm);
-            const categorySlug = section ? section.slug : null;
-            newForm.addEventListener('submit', (e) => handleCommentSubmit(e, article.id, article.slug, article.title, categorySlug, user));
+            newForm.addEventListener('submit', (e) => handleCommentSubmit(e, article.id, article.slug, article.title, user));
         }
     } else {
         if (commentFormContainer) commentFormContainer.style.display = 'none';
@@ -544,7 +541,7 @@ function setupCommentForm(article, section) {
 }
 
 // Handle comment submission
-async function handleCommentSubmit(event, articleId, articleSlug, articleTitle, categorySlug, user) {
+async function handleCommentSubmit(event, articleId, articleSlug, articleTitle, user) {
     event.preventDefault();
     
     if (!user || !db) {
@@ -582,8 +579,7 @@ async function handleCommentSubmit(event, articleId, articleSlug, articleTitle, 
             timestamp: firebase.firestore.FieldValue.serverTimestamp(),
             articleId: articleId,
             articleSlug: articleSlug || '',
-            articleTitle: articleTitle || '',
-            articleCategory: categorySlug || ''
+            articleTitle: articleTitle || ''
         };
         
         await db.collection('articles').doc(articleId).collection('comments').add(commentData);
