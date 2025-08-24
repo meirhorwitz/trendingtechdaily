@@ -1,4 +1,18 @@
-const { logger } = require("../config");
+const { logger, db } = require("../config");
+
+// Simple HTML escaping to prevent injection in rendered pages
+function escapeHtml(str = "") {
+  return str.replace(/[&<>"']/g, (char) => {
+    const escapeMap = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+    return escapeMap[char] || char;
+  });
+}
+
+// Very lightweight crawler detection based on the User-Agent header
+function isCrawler(req) {
+  const ua = (req.get("User-Agent") || "").toLowerCase();
+  return /bot|crawl|spider|slurp|facebookexternalhit|mediapartners-google|adsbot|bingpreview/.test(ua);
+}
 
 /**
  * Sanitizes and validates a URL slug
@@ -29,20 +43,60 @@ exports.handleArticleRouting = async (req, res) => {
   try {
     const pathSegments = req.path.split("/").filter(Boolean);
     logger.info("Handling article routing for path:", req.path, "Segments:", pathSegments);
-    
+
     // Check if this is a two-segment path (category/article)
     if (pathSegments.length === 2) {
       const [categorySlug, articleSlug] = pathSegments;
-      
+
       // Validate slugs
       if (!isValidSlug(categorySlug) || !isValidSlug(articleSlug)) {
         logger.error("Invalid slugs detected:", { categorySlug, articleSlug });
         return res.status(404).send("Page not found");
       }
-      
+
       logger.info("Valid article route detected:", { categorySlug, articleSlug });
-      
-      // Return HTML that passes routing info to the client
+      if (isCrawler(req)) {
+        logger.info("Crawler detected - performing server render for article");
+
+        const articleSnap = await db.collection("articles")
+          .where("slug", "==", articleSlug)
+          .where("published", "==", true)
+          .limit(1)
+          .get();
+
+        if (articleSnap.empty) {
+          logger.info("Article not found for crawler render");
+          return res.status(404).send("Page not found");
+        }
+
+        const article = articleSnap.docs[0].data();
+
+        const categoryDoc = await db.collection("sections").doc(article.category).get();
+        if (!categoryDoc.exists) {
+          return res.status(404).send("Page not found");
+        }
+        const categoryData = categoryDoc.data();
+        const actualCategorySlug = categoryData.slug || article.category.toLowerCase();
+
+        const canonicalUrl = `https://trendingtechdaily.com/${actualCategorySlug}/${articleSlug}`;
+
+        const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${escapeHtml(article.title)} - TrendingTech Daily</title>
+  <link rel="canonical" href="${canonicalUrl}" />
+  <meta name="description" content="${escapeHtml(article.description || article.excerpt || "")}" />
+</head>
+<body>
+  <h1>${escapeHtml(article.title)}</h1>
+  ${article.content || ""}
+</body>
+</html>`;
+        return res.status(200).send(html);
+      }
+
+      // Non-crawler: return HTML that passes routing info to the client
       const articleHtml = `<!DOCTYPE html>
 <html>
 <head>
@@ -64,35 +118,71 @@ exports.handleArticleRouting = async (req, res) => {
     <p>If you are not redirected, <a href="/article.html">click here</a>.</p>
 </body>
 </html>`;
-      
+
       res.status(200).send(articleHtml);
-    } 
+    }
     // Check if this is a single-segment path (category)
     else if (pathSegments.length === 1) {
       const categorySlug = pathSegments[0];
-      
+
       // Validate slug
       if (!isValidSlug(categorySlug)) {
         logger.error("Invalid category slug:", categorySlug);
         return res.status(404).send("Page not found");
       }
-      
+
       logger.info("Valid category route detected:", { categorySlug });
-      
-      // Check if this is a valid category slug
-      const { db } = require("../config");
+
       const categorySnapshot = await db.collection("sections")
         .where("slug", "==", categorySlug)
         .where("active", "==", true)
         .limit(1)
         .get();
-      
+
       if (categorySnapshot.empty) {
         logger.info(`No active category found for slug: ${categorySlug}`);
         return res.status(404).send("Page not found");
       }
-      
-      // Return HTML that redirects to category.html with the slug
+
+      if (isCrawler(req)) {
+        logger.info("Crawler detected - performing server render for category");
+        const categoryDoc = categorySnapshot.docs[0];
+        const category = categoryDoc.data();
+
+        const articlesSnap = await db.collection("articles")
+          .where("category", "==", categoryDoc.id)
+          .where("published", "==", true)
+          .orderBy("createdAt", "desc")
+          .limit(20)
+          .get();
+
+        let articlesList = "";
+        articlesSnap.forEach((doc) => {
+          const a = doc.data();
+          if (a.slug) {
+            articlesList += `<li><a href="/${categorySlug}/${a.slug}">${escapeHtml(a.title || a.slug)}</a></li>`;
+          }
+        });
+
+        const canonicalUrl = `https://trendingtechdaily.com/${categorySlug}`;
+
+        const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${escapeHtml(category.name || "Category")} - TrendingTech Daily</title>
+  <link rel="canonical" href="${canonicalUrl}" />
+  <meta name="description" content="${escapeHtml(category.description || "")}" />
+</head>
+<body>
+  <h1>${escapeHtml(category.name || "Category")}</h1>
+  <ul>${articlesList}</ul>
+</body>
+</html>`;
+        return res.status(200).send(html);
+      }
+
+      // Non-crawler: Return HTML that redirects to category.html with the slug
       const categoryHtml = `<!DOCTYPE html>
 <html>
 <head>
@@ -111,7 +201,7 @@ exports.handleArticleRouting = async (req, res) => {
     <p>If you are not redirected, <a href="/category.html">click here</a>.</p>
 </body>
 </html>`;
-      
+
       res.status(200).send(categoryHtml);
     } else {
       // Not a valid path
@@ -267,18 +357,55 @@ exports.handleDynamicRouting = async (req, res) => {
     }
     
     // Check if this is a valid category slug
-    const { db } = require("../config");
     const categorySnapshot = await db.collection("sections")
       .where("slug", "==", urlPath)
       .where("active", "==", true)
       .limit(1)
       .get();
-    
+
     if (categorySnapshot.empty) {
       logger.info(`No active category found for slug: ${urlPath}`);
       return res.status(404).send("Page not found");
     }
-    
+
+    if (isCrawler(req)) {
+      logger.info("Crawler detected - performing server render for category");
+      const categoryDoc = categorySnapshot.docs[0];
+      const category = categoryDoc.data();
+
+      const articlesSnap = await db.collection("articles")
+        .where("category", "==", categoryDoc.id)
+        .where("published", "==", true)
+        .orderBy("createdAt", "desc")
+        .limit(20)
+        .get();
+
+      let articlesList = "";
+      articlesSnap.forEach((doc) => {
+        const a = doc.data();
+        if (a.slug) {
+          articlesList += `<li><a href="/${urlPath}/${a.slug}">${escapeHtml(a.title || a.slug)}</a></li>`;
+        }
+      });
+
+      const canonicalUrl = `https://trendingtechdaily.com/${urlPath}`;
+
+      const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${escapeHtml(category.name || "Category")} - TrendingTech Daily</title>
+  <link rel="canonical" href="${canonicalUrl}" />
+  <meta name="description" content="${escapeHtml(category.description || "")}" />
+</head>
+<body>
+  <h1>${escapeHtml(category.name || "Category")}</h1>
+  <ul>${articlesList}</ul>
+</body>
+</html>`;
+      return res.status(200).send(html);
+    }
+
     // Return HTML that redirects to category.html with the slug
     const categoryHtml = `<!DOCTYPE html>
 <html>
@@ -298,7 +425,7 @@ exports.handleDynamicRouting = async (req, res) => {
     <p>If you are not redirected, <a href="/category.html">click here</a>.</p>
 </body>
 </html>`;
-    
+
     res.status(200).send(categoryHtml);
     
   } catch (error) {
