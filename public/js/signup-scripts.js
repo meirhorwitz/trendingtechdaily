@@ -24,6 +24,11 @@ async function loadNavbar() {
             }
             navbarPlaceholder.innerHTML = navbarHTML;
             console.log("loadNavbar: Navbar HTML successfully injected into #navbar-placeholder.");
+
+            // Initialize navigation enhancements like categories and search
+            if (typeof initializeNavigation === 'function') {
+                initializeNavigation();
+            }
         } catch (error) {
             console.error("loadNavbar: Error loading navbar:", error);
             navbarPlaceholder.innerHTML = `<p class="critical-error-message" style="text-align:center; padding: 1rem;">Navbar could not be loaded. Error: ${error.message}. Path: /nav.html</p>`;

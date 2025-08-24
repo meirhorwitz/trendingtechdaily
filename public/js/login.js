@@ -23,6 +23,11 @@ async function loadNavbar() {
             }
             navbarPlaceholder.innerHTML = navbarHTML;
             console.log("login.js - loadNavbar: Navbar HTML successfully injected.");
+
+            // Initialize navigation features (search, categories, auth) after injecting the navbar
+            if (typeof initializeNavigation === 'function') {
+                initializeNavigation();
+            }
         } catch (error) {
             console.error("login.js - loadNavbar: Error loading navbar:", error);
             navbarPlaceholder.innerHTML = `<p style="text-align:center; padding: 1rem; color: red;">Navbar could not be loaded. Error: ${error.message}.</p>`;
