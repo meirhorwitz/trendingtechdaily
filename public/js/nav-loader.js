@@ -24,8 +24,6 @@ function initializeNavigation() {
       .catch(error => console.error(`Error loading content for ${placeholderId}:`, error));
   };
 
-  const translateCategory = (name) => name;
-
   const navAlreadyLoaded = document.getElementById('navbarMain');
   const navFile = '/nav.html';
 
@@ -215,7 +213,7 @@ function initializeResponsiveCategories() {
       const a = document.createElement('a');
       a.className = 'nav-link';
       a.href = `/${cat.slug}`;
-      a.textContent = translateCategory(cat.name);
+      a.textContent = cat.name;
       li.appendChild(a);
       
       if (insertBeforeElement) {
@@ -234,7 +232,7 @@ function initializeResponsiveCategories() {
         const a = document.createElement('a');
         a.className = 'dropdown-item';
         a.href = `/${cat.slug}`;
-        a.textContent = translateCategory(cat.name);
+        a.textContent = cat.name;
         li.appendChild(a);
         moreDropdownMenu.appendChild(li);
       });
@@ -333,16 +331,16 @@ function loadFooterCategories() {
           const category = doc.data();
           const slug = category.slug || category.name.toLowerCase().replace(/\s+/g, '-');
           const href = `/${slug}`;
-          categoriesHTML += `<li><a href="${href}">${translateCategory(category.name)}</a></li>`;
+          categoriesHTML += `<li><a href="${href}">${category.name}</a></li>`;
         });
         footerCategoriesList.innerHTML = categoriesHTML;
       } else {
         // Use default categories
         footerCategoriesList.innerHTML = `
-          <li><a href="/ai">${translateCategory('AI')}</a></li>
-          <li><a href="/gadgets">${translateCategory('Gadgets')}</a></li>
-          <li><a href="/startups">${translateCategory('Startups')}</a></li>
-          <li><a href="/crypto">${translateCategory('Crypto')}</a></li>
+          <li><a href="/ai">AI</a></li>
+          <li><a href="/gadgets">Gadgets</a></li>
+          <li><a href="/startups">Startups</a></li>
+          <li><a href="/crypto">Crypto</a></li>
         `;
       }
     })
