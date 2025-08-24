@@ -113,11 +113,11 @@
       },
       {
         "source": "/*/*",
-        "destination": "/router.html"
+        "destination": "/article.html"
       },
       {
         "source": "/*",
-        "destination": "/router.html"
+        "destination": "/category.html"
       }
     ],
     "headers": [

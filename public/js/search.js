@@ -148,14 +148,17 @@ document.addEventListener('DOMContentLoaded', function() {
         (article.excerpt || stripHtml(article.content).substring(0, 150) + '...') : 
         'No preview available';
       
+      const categorySlug = window.categorySlugCache ? (window.categorySlugCache[article.category] || (article.category || '').toLowerCase()) : (article.category || '').toLowerCase();
+      const link = categorySlug ? `/${categorySlug}/${article.slug}` : `/article.html?slug=${article.slug}`;
+
       const articleCard = `
         <article class="search-article-card">
-          <img src="${article.featuredImage || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y4ZjlmYSIvPgogIDx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM2Yzc1N2QiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPk5vIEltYWdlIEF2YWlsYWJsZTwvdGV4dD4KPC9zdmc+'}" 
-               alt="${article.title}" 
+          <img src="${article.featuredImage || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y4ZjlmYSIvPgogIDx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM2Yzc1N2QiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPk5vIEltYWdlIEF2YWlsYWJsZTwvdGV4dD4KPC9zdmc+'}"
+               alt="${article.title}"
                class="search-article-image">
           <div class="search-article-content">
             <h2 class="article-title">
-              <a href="/article/${article.slug}">${article.title}</a>
+              <a href="${link}">${article.title}</a>
             </h2>
             <p class="article-description">${excerpt}</p>
             <div class="article-meta">
@@ -313,7 +316,9 @@ document.addEventListener('DOMContentLoaded', function() {
       trendingTopicsList.innerHTML = '';
       snapshot.forEach(doc => {
         const article = doc.data();
-        const listItem = `<li><a href="/article/${article.slug}">${article.title}</a></li>`;
+        const categorySlug = window.categorySlugCache ? (window.categorySlugCache[article.category] || (article.category || '').toLowerCase()) : (article.category || '').toLowerCase();
+        const link = categorySlug ? `/${categorySlug}/${article.slug}` : `/article.html?slug=${article.slug}`;
+        const listItem = `<li><a href="${link}">${article.title}</a></li>`;
         trendingTopicsList.innerHTML += listItem;
       });
         

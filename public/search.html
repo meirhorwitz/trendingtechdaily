@@ -142,6 +142,7 @@
   
   // Category name mapping - will be populated from database
   let categoryNames = {};
+  let categorySlugs = {};
   
   let currentResults = [];
   let currentQuery = '';
@@ -171,8 +172,10 @@
           const data = doc.data();
           const categoryId = doc.id;
           const categoryName = data.name || categoryId;
+          const categorySlug = data.slug || categoryId;
 
           categoryNames[categoryId] = categoryName;
+          categorySlugs[categoryId] = categorySlug;
 
           const option = document.createElement('option');
           option.value = categoryId;
@@ -274,7 +277,9 @@
       // Get category display name
       const categoryId = article.category || article.categoryName || '';
       const categoryDisplay = categoryNames[categoryId] || categoryId || 'Uncategorized';
-      
+      const categorySlug = categorySlugs[categoryId] || categoryId;
+      const link = categorySlug ? `/${categorySlug}/${article.slug}` : `/article.html?slug=${article.slug}`;
+
       const articleCard = `
         <div class="article-card mb-3">
           <div class="row g-0">
@@ -286,7 +291,7 @@
             <div class="col-md-8">
               <div class="article-content">
                 <h2 class="article-title">
-                  <a href="/article/${article.slug}">${article.title}</a>
+                  <a href="${link}">${article.title}</a>
                 </h2>
                 <p class="article-description">${excerpt}</p>
                 <div class="article-meta">
@@ -417,13 +422,17 @@
         trendingTopicsList.innerHTML = '';
         altSnapshot.forEach(doc => {
           const article = doc.data();
-          trendingTopicsList.innerHTML += `<li><a href="/article/${article.slug}">${article.title}</a></li>`;
+          const categorySlug = categorySlugs[article.category] || article.category;
+          const link = categorySlug ? `/${categorySlug}/${article.slug}` : `/article.html?slug=${article.slug}`;
+          trendingTopicsList.innerHTML += `<li><a href="${link}">${article.title}</a></li>`;
         });
       } else {
         trendingTopicsList.innerHTML = '';
         snapshot.forEach(doc => {
           const article = doc.data();
-          trendingTopicsList.innerHTML += `<li><a href="/article/${article.slug}">${article.title}</a></li>`;
+          const categorySlug2 = categorySlugs[article.category] || article.category;
+          const link2 = categorySlug2 ? `/${categorySlug2}/${article.slug}` : `/article.html?slug=${article.slug}`;
+          trendingTopicsList.innerHTML += `<li><a href="${link2}">${article.title}</a></li>`;
         });
       }
 
@@ -440,7 +449,9 @@
           trendingTopicsList.innerHTML = '';
           fallbackSnapshot.forEach(doc => {
             const article = doc.data();
-            trendingTopicsList.innerHTML += `<li><a href="/article/${article.slug}">${article.title}</a></li>`;
+            const categorySlug3 = categorySlugs[article.category] || article.category;
+            const link3 = categorySlug3 ? `/${categorySlug3}/${article.slug}` : `/article.html?slug=${article.slug}`;
+            trendingTopicsList.innerHTML += `<li><a href="${link3}">${article.title}</a></li>`;
           });
         } else {
           trendingTopicsList.innerHTML = '<li class="text-muted">No articles found</li>';
