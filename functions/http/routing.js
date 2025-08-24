@@ -21,17 +21,17 @@ function isCrawler(req) {
  */
 function isValidSlug(slug) {
   if (!slug) return false;
-  
+
   // More permissive regex that allows multiple consecutive hyphens
   // Allows: lowercase letters, numbers, and hyphens
   const slugRegex = /^[a-z0-9-]+$/i;
-  
+
   // Additional validation
-  return slugRegex.test(slug) && 
-         slug.length <= 100 && 
-         slug.length >= 3 &&
-         !slug.startsWith('-') &&  // Don't start with hyphen
-         !slug.endsWith('-');      // Don't end with hyphen
+  return slugRegex.test(slug) &&
+    slug.length <= 100 &&
+    slug.length >= 3 &&
+    !slug.startsWith('-') && // Don't start with hyphen
+    !slug.endsWith('-');   // Don't end with hyphen
 }
 
 /**
@@ -51,35 +51,36 @@ exports.handleArticleRouting = async (req, res) => {
       // Validate slugs
       if (!isValidSlug(categorySlug) || !isValidSlug(articleSlug)) {
         logger.error("Invalid slugs detected:", { categorySlug, articleSlug });
-        return res.status(404).send("Page not found");
+        return res.status(404).sendFile('404.html', { root: 'public' });
       }
 
       logger.info("Valid article route detected:", { categorySlug, articleSlug });
+
+      // Fetch article to validate existence
+      const articleSnapshot = await db.collection("articles")
+        .where("slug", "==", articleSlug)
+        .where("published", "==", true)
+        .limit(1)
+        .get();
+
+      if (articleSnapshot.empty) {
+        logger.info(`No published article found for slug: ${articleSlug}`);
+        return res.status(404).sendFile('404.html', { root: 'public' });
+      }
+
+      const article = articleSnapshot.docs[0].data();
+      const categoryDoc = await db.collection("sections").doc(article.category).get();
+      const categoryData = categoryDoc.exists ? categoryDoc.data() : null;
+      const categorySlugFromDb = categoryData ? (categoryData.slug || article.category.toLowerCase()) : null;
+
+      if (categorySlugFromDb !== categorySlug) {
+        logger.info(`Article slug ${articleSlug} does not belong to category ${categorySlug}`);
+        return res.status(404).sendFile('404.html', { root: 'public' });
+      }
+
       if (isCrawler(req)) {
         logger.info("Crawler detected - performing server render for article");
-
-        const articleSnap = await db.collection("articles")
-          .where("slug", "==", articleSlug)
-          .where("published", "==", true)
-          .limit(1)
-          .get();
-
-        if (articleSnap.empty) {
-          logger.info("Article not found for crawler render");
-          return res.status(404).send("Page not found");
-        }
-
-        const article = articleSnap.docs[0].data();
-
-        const categoryDoc = await db.collection("sections").doc(article.category).get();
-        if (!categoryDoc.exists) {
-          return res.status(404).send("Page not found");
-        }
-        const categoryData = categoryDoc.data();
-        const actualCategorySlug = categoryData.slug || article.category.toLowerCase();
-
-        const canonicalUrl = `https://trendingtechdaily.com/${actualCategorySlug}/${articleSlug}`;
-
+        const canonicalUrl = `https://trendingtechdaily.com/${categorySlugFromDb}/${articleSlug}`;
         const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -208,7 +209,7 @@ exports.handleArticleRouting = async (req, res) => {
       logger.info("Not a valid path, passing to next handler");
       res.status(404).send("Page not found");
     }
-    
+
   } catch (error) {
     logger.error("Error in handleArticleRouting:", error);
     res.status(404).send("Page not found");
@@ -221,8 +222,6 @@ exports.handleArticleRouting = async (req, res) => {
 exports.handleLegacyRedirects = async (req, res) => {
   try {
     const urlPath = req.path;
-    const { db } = require("../config");
-
     logger.info(`Processing potential legacy redirect for path: ${urlPath}`);
 
     const segments = urlPath.split("/").filter(Boolean);
@@ -344,18 +343,18 @@ exports.handleDynamicRouting = async (req, res) => {
   try {
     const urlPath = req.path.substring(1); // Remove leading slash
     logger.info("Handling dynamic routing for path:", urlPath);
-    
+
     // Skip if path contains multiple segments (handled by article routing)
     if (urlPath.includes("/")) {
       return res.status(404).send("Page not found");
     }
-    
+
     // Validate slug
     if (!isValidSlug(urlPath)) {
       logger.error("Invalid category slug:", urlPath);
       return res.status(404).send("Page not found");
     }
-    
+
     // Check if this is a valid category slug
     const categorySnapshot = await db.collection("sections")
       .where("slug", "==", urlPath)
@@ -427,7 +426,7 @@ exports.handleDynamicRouting = async (req, res) => {
 </html>`;
 
     res.status(200).send(categoryHtml);
-    
+
   } catch (error) {
     logger.error("Error in handleDynamicRouting:", error);
     res.status(404).send("Page not found");
