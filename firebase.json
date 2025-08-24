@@ -113,11 +113,11 @@
       },
       {
         "source": "/*/*",
-        "destination": "/router.html"
+        "function": "handleLegacyRedirects"
       },
       {
         "source": "/*",
-        "destination": "/router.html"
+        "function": "handleDynamicRouting"
       }
     ],
     "headers": [
