@@ -48,6 +48,22 @@
         document.getElementById('twitterDescription').content = categoryData.description || 'Read the latest technology news and insights on TrendingTech Daily';
     }
     </script>
+
+    <script>
+    // Pre-load metadata using URL path before dynamic data loads
+    (function() {
+        const path = window.location.pathname;
+        const canonical = document.getElementById('canonicalLink');
+        if (canonical) {
+            canonical.href = 'https://trendingtechdaily.com' + path;
+        }
+        const parts = path.split('/').filter(Boolean);
+        if (parts.length >= 1) {
+            const slug = decodeURIComponent(parts[0]).replace(/-/g, ' ');
+            document.title = slug + ' - TrendingTech Daily';
+        }
+    })();
+    </script>
 </head>
 <body>
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-M68CNVMQ"
