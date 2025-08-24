@@ -1,9 +1,13 @@
 // js/nav-loader.js - Updated with proper category loading
 
+let firebaseReadyFired = false;
+let navigationInitialized = false; // Track initialization state
+
 /**
  * The main function to initialize the entire navigation system.
  */
 function initializeNavigation() {
+  navigationInitialized = true; // Prevent duplicate initialization calls
   const loadHTML = (url, placeholderId, callback) => {
     fetch(url)
       .then(response => {
@@ -26,12 +30,9 @@ function initializeNavigation() {
   const navFile = '/nav.html';
 
   if (navAlreadyLoaded) {
-    // If the navbar is already present, re-run interactive helpers only
+    // Navbar already exists; ensure helpers and categories are initialized
     initializeSearch();
-    if (!document.getElementById('more-dropdown') ||
-        document.getElementById('category-nav-placeholder')?.previousElementSibling?.id === 'more-dropdown') {
-      initializeResponsiveCategories();
-    }
+    initializeResponsiveCategories();
     if (window.initializeAuth) {
       window.initializeAuth();
     }
@@ -354,36 +355,26 @@ function loadFooterCategories() {
 
 // Wait for Firebase to be ready
 document.addEventListener('firebase-ready', () => {
+  firebaseReadyFired = true;
+  console.log('Firebase ready event fired');
   if (!navigationInitialized) {
-    navigationInitialized = true;
     initializeNavigation();
   }
 });
 
 // Fallback initialization methods
-let firebaseReadyFired = false;
-let navigationInitialized = false; // Track if navigation is already initialized
-
-document.addEventListener('firebase-ready', () => { 
-  firebaseReadyFired = true; 
-  console.log('Firebase ready event fired');
-});
-
-// If the page is using inline Firebase initialization (like stock-data.html)
 document.addEventListener('DOMContentLoaded', () => {
   // Check if Firebase is already initialized after a delay
   setTimeout(() => {
     if (!navigationInitialized && !firebaseReadyFired && typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
       console.log('Fallback: Initializing navigation without firebase-ready event');
-      navigationInitialized = true;
       initializeNavigation();
     }
   }, 1000);
-  
+
   // Also check immediately for pages that initialize Firebase synchronously
   if (!navigationInitialized && typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
     console.log('Firebase already initialized, loading navigation immediately');
-    navigationInitialized = true;
     initializeNavigation();
   }
 });

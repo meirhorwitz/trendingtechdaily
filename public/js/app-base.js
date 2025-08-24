@@ -246,57 +246,44 @@ function loadLatestArticles(containerId = 'latest-articles') {
 
 // Updated loadSections function for app-base.js that stores full section data
 function loadSections() {
-  const categoryNavPlaceholder = document.getElementById('category-nav-placeholder');
   const footerCategoriesList = document.getElementById('footer-categories-list');
   const sidebarContainer = document.getElementById('categories-list');
-  
+
   // Return the promise chain
   return db.collection('sections').where('active', '==', true).orderBy('order').limit(10).get()
     .then(snap => {
-        let navHTML = '';
         let footerCategoriesHTML = '';
         let sideHTML = '';
         let apiSections = [];
-        
+
         if (!snap.empty) {
             snap.forEach(doc => {
                 const section = { id: doc.id, ...doc.data() };
                 // Use clean URL structure
                 const url = `/${getSafe(() => section.slug, '#')}`;
                 const name = getSafe(() => section.name, 'Unnamed Section');
-                
-                console.log(`Creating nav link for ${name}: ${url}`);
-                
-                navHTML += `<li class="nav-item"><a class="nav-link" href="${url}">${name}</a></li>`;
+
+                console.log(`Processing section for ${name}: ${url}`);
+
                 footerCategoriesHTML += `<li><a href="${url}">${name}</a></li>`;
                 if (sidebarContainer) sideHTML += `<li><a href="${url}">${name}</a></li>`;
-                
+
                 // Store full section data in categoryCache
                 categoryCache[doc.id] = {
                     name: name,
                     slug: section.slug
                 };
-                
+
                 if (section.api) apiSections.push(section);
             });
         }
-        
+
         // Add stock data link
         const stockDataUrl = '/stock-data';
         const stockDataLinkText = 'Stock Data';
-        navHTML += `<li class="nav-item"><a class="nav-link" href="${stockDataUrl}">${stockDataLinkText}</a></li>`;
         footerCategoriesHTML += `<li><a href="${stockDataUrl}">${stockDataLinkText}</a></li>`;
         if (sidebarContainer) sideHTML += `<li><a href="${stockDataUrl}">${stockDataLinkText}</a></li>`;
 
-        if (categoryNavPlaceholder && navHTML) {
-            const fragment = document.createDocumentFragment();
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = navHTML;
-            while (tempDiv.firstChild) {
-                fragment.appendChild(tempDiv.firstChild);
-            }
-            categoryNavPlaceholder.parentNode.insertBefore(fragment, categoryNavPlaceholder);
-        }
         if (footerCategoriesList) footerCategoriesList.innerHTML = footerCategoriesHTML || '<li>No categories found.</li>';
         if (sidebarContainer) sidebarContainer.innerHTML = sideHTML || '<li>No categories found.</li>';
         
