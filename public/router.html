@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TrendingTech Daily - Loading...</title>
+    <link id="canonicalLink" rel="canonical" href="https://trendingtechdaily.com/" />
     <style>
         body {
             margin: 0;
@@ -36,11 +37,16 @@
         // Immediately determine the route and load appropriate content
         (function() {
             const path = window.location.pathname;
+            const canonical = document.getElementById('canonicalLink');
+            if (canonical) {
+                canonical.href = 'https://trendingtechdaily.com' + path;
+            }
             const segments = path.split('/').filter(Boolean);
-            
+
             console.log('Router: Processing path:', path, 'Segments:', segments);
-            
+
             if (segments.length === 1) {
+                document.title = segments[0] + ' - TrendingTech Daily';
                 // Category page
                 const categorySlug = segments[0];
                 console.log('Router: Detected category page, slug:', categorySlug);
@@ -55,6 +61,7 @@
                 // Article page
                 const categorySlug = segments[0];
                 const articleSlug = segments[1];
+                document.title = articleSlug + ' - TrendingTech Daily';
                 console.log('Router: Detected article page, category:', categorySlug, 'article:', articleSlug);
                 
                 // Store the routing info for the article page to use
@@ -69,6 +76,7 @@
             } else {
                 // Invalid path, redirect to homepage
                 console.log('Router: Invalid path, redirecting to homepage');
+                document.title = 'TrendingTech Daily';
                 window.location.href = '/';
             }
         })();
