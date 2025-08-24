@@ -160,11 +160,7 @@ function loadLatestArticles() {
             let featuredSlug = null;
             const featuredLink = document.querySelector('#featured-article-container .article-title a');
             if (featuredLink?.href) {
-                try {
-                    // Extract slug from path /category/slug
-                    featuredSlug = new URL(featuredLink.href).pathname.split('/')
-                        .filter(Boolean).pop();
-                }
+                try { featuredSlug = new URLSearchParams(new URL(featuredLink.href).search).get('slug'); } 
                 catch(e) { console.warn("Could not parse featured slug"); }
             }
 
@@ -195,20 +191,17 @@ function renderArticle(doc, container, isFeatured = false) {
         const article = { id: doc.id, ...doc.data() };
         const date = getSafe(() => new Date(article.createdAt.toDate()).toLocaleDateString(), 'N/A');
         
-        // Get category info from cache
+        // Get category name from cache with better fallback handling
         let categoryName = 'Uncategorized';
-        let categorySlug = 'uncategorized';
         if (article.category && categoryCache[article.category]) {
             if (typeof categoryCache[article.category] === 'object') {
                 categoryName = categoryCache[article.category].name || 'Uncategorized';
-                categorySlug = categoryCache[article.category].slug || article.category.toLowerCase();
             } else {
                 categoryName = categoryCache[article.category];
-                categorySlug = article.category.toLowerCase();
             }
         }
-
-        const articleUrl = article.slug ? (window.language === 'he' ? `/article-he.html?slug=${article.slug}` : `/${categorySlug}/${article.slug}`) : '#';
+        
+        const articleUrl = article.slug ? (window.language === 'he' ? `/article-he.html?slug=${article.slug}` : `/article.html?slug=${article.slug}`) : '#';
         const cardClass = isFeatured ? 'featured-article' : 'article-card';
         const titleTag = isFeatured ? 'h2' : 'h3';
         const title = getSafe(() => article.title, 'Untitled Article');
@@ -243,20 +236,17 @@ function renderArticleCard(article) {
     try {
         const date = getSafe(() => new Date(article.createdAt.toDate()).toLocaleDateString(), 'N/A');
         
-        // Get category info from cache with better fallback handling
+        // Get category name from cache with better fallback handling
         let categoryName = 'Uncategorized';
-        let categorySlug = 'uncategorized';
         if (article.category && categoryCache[article.category]) {
             if (typeof categoryCache[article.category] === 'object') {
                 categoryName = categoryCache[article.category].name || 'Uncategorized';
-                categorySlug = categoryCache[article.category].slug || article.category.toLowerCase();
             } else {
                 categoryName = categoryCache[article.category];
-                categorySlug = article.category.toLowerCase();
             }
         }
-
-        const articleUrl = getSafe(() => article.slug) ? (window.language === 'he' ? `/article-he.html?slug=${getSafe(() => article.slug)}` : `/${categorySlug}/${getSafe(() => article.slug)}`) : '#';
+        
+        const articleUrl = getSafe(() => article.slug) ? (window.language === 'he' ? `/article-he.html?slug=${getSafe(() => article.slug)}` : `/article.html?slug=${getSafe(() => article.slug)}`) : '#';
         const title = getSafe(() => article.title, 'Untitled Article');
         const excerpt = getSafe(() => article.excerpt, '');
         const featuredImage = getSafe(() => article.featuredImage);

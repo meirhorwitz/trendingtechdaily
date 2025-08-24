@@ -470,8 +470,7 @@ async function loadSavedArticles(user) {
             const data = doc.data();
             const title = data.articleTitle || 'Untitled Article';
             const slug = data.articleSlug || '#';
-            const category = data.articleCategory || '';
-            const url = slug !== '#' ? (category ? `/${category}/${slug}` : `/article.html?slug=${slug}`) : '#';
+            const url = slug !== '#' ? `/article.html?slug=${slug}` : '#';
             const date = data.savedAt?.toDate ? new Date(data.savedAt.toDate()).toLocaleDateString() : 'N/A';
             articlesHTML += `
                 <li class="list-group-item d-flex justify-content-between align-items-center">
@@ -507,8 +506,7 @@ async function loadReadHistory(user) {
             const data = doc.data();
             const title = data.articleTitle || 'Untitled Article';
             const slug = data.articleSlug || '#';
-            const category = data.articleCategory || '';
-            const url = slug !== '#' ? (category ? `/${category}/${slug}` : `/article.html?slug=${slug}`) : '#';
+            const url = slug !== '#' ? `/article.html?slug=${slug}` : '#';
             const date = data.lastReadAt?.toDate ? new Date(data.lastReadAt.toDate()).toLocaleString() : 'N/A';
             historyHTML += `
                 <li class="list-group-item d-flex justify-content-between align-items-center">
@@ -549,8 +547,7 @@ async function loadMyComments(user) {
             const date = data.timestamp?.toDate ? new Date(data.timestamp.toDate()).toLocaleDateString() : 'N/A';
             const articleTitle = data.articleTitle || 'Article';
             const articleSlug = data.articleSlug || '#';
-            const category = data.articleCategory || '';
-            const articleUrl = articleSlug !== '#' ? (category ? `/${category}/${articleSlug}#comment-${doc.id}` : `/article.html?slug=${articleSlug}#comment-${doc.id}`) : '#';
+            const articleUrl = articleSlug !== '#' ? `/article.html?slug=${articleSlug}#comment-${doc.id}` : '#';
             commentsHTML += `
                 <li class="list-group-item">
                     <p class="mb-1 fst-italic">"${escapeHtml(text)}"</p>
