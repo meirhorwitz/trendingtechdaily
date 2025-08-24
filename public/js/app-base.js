@@ -63,7 +63,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 placeholder.innerHTML = html;
                 console.log("Navbar HTML successfully injected.");
 
-                setupAuthListener(); 
+                // Activate navigation enhancements such as dynamic categories
+                if (typeof initializeNavigation === 'function') {
+                    initializeNavigation();
+                }
+
+                setupAuthListener();
 
                 const path = window.location.pathname;
                 document.querySelectorAll('#navbar-placeholder .nav-link').forEach(link => {
@@ -618,7 +623,12 @@ function loadNavbarAndDependentContent() {
             placeholder.innerHTML = html;
             console.log("Navbar HTML successfully injected.");
 
-            setupAuthListener(); 
+            // Ensure nav functions like category rendering are initialized
+            if (typeof initializeNavigation === 'function') {
+                initializeNavigation();
+            }
+
+            setupAuthListener();
 
             // Fixed URL construction - handle relative URLs properly
             const path = window.location.pathname;

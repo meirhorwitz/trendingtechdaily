@@ -23,6 +23,12 @@ async function loadNavbar() {
             }
             navbarPlaceholder.innerHTML = navbarHTML;
             console.log("profile.js - loadNavbar: Navbar HTML successfully injected.");
+
+            // Initialize navigation components like category links
+            if (typeof initializeNavigation === 'function') {
+                initializeNavigation();
+            }
+
             // After navbar is loaded, update its state based on current auth
             // Ensure currentUser is available or fetched if app-base.js doesn't set it globally directly
              if (typeof auth !== 'undefined' && auth.currentUser) {
