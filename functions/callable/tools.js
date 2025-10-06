@@ -34,7 +34,7 @@ async function generateAIAgentResponse(request) {
     };
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash", // Use a model that supports tool calling
+      model: "gemini-1.5-flash-latest", // Use a model that supports tool calling
       safetySettings: getSafetySettings(),
       tools: tools,
     });
@@ -130,7 +130,7 @@ async function getFinnhubStockData({ data }) {
       if (!geminiKey) throw new HttpsError("internal", "Gemini API Key needed for analysis.");
       
       const genAI = new GoogleGenerativeAI(geminiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
       
       const analysisPrompt = `Analyze the following stock data and provide a brief summary of market sentiment and key trends:\n\n${JSON.stringify(stockData, null, 2)}`;
       const analysisResult = await model.generateContent(analysisPrompt);
