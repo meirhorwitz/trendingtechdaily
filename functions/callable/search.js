@@ -151,7 +151,7 @@ async function getSearchSuggestions(request) {
         }
 
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
         // Create context from previous results
         const context = previousResults.length > 0 
@@ -255,7 +255,7 @@ async function getGeminiInsights(query, results) {
         if (!apiKey) return null;
 
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
         const resultsContext = results.slice(0, 5).map(r => `- ${r.title}: ${r.excerpt}`).join('\n');
 

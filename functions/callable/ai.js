@@ -65,7 +65,7 @@ async function generateArticleContent(request) { // request contains { auth, dat
       }
       
       const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", safetySettings: getSafetySettings() }); 
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest", safetySettings: getSafetySettings() });
 
       const structuredPrompt = `
 Write a professional tech/finance news article about "${topic}" in the style of Yahoo Finance or Bloomberg.
@@ -418,7 +418,7 @@ async function generateTopTenArticle(request) {
         if (!sdkLoaded || !GoogleGenerativeAI) throw new HttpsError("internal", "Core AI SDK failed to load.");
 
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", safetySettings: getSafetySettings() });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest", safetySettings: getSafetySettings() });
 
         const structuredPrompt = `Create a top ${count} list article about "${topic}" for a technology news website.
 
@@ -507,7 +507,7 @@ async function generateHowToArticle(request) {
         if (!sdkLoaded || !GoogleGenerativeAI) throw new HttpsError("internal", "Core AI SDK failed to load.");
 
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", safetySettings: getSafetySettings() });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest", safetySettings: getSafetySettings() });
 
         const structuredPrompt = `Create a step-by-step how-to article about "${topic}" for a technology news website.
 
