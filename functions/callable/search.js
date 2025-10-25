@@ -2,7 +2,7 @@
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { logger } = require('../config');
 const admin = require('firebase-admin');
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { loadGeminiSDK, getGeminiSDK, buildGenerateContentRequest, getSafetySettings } = require('../utils');
 
 /**
  * Enhanced search function with AI-powered suggestions
@@ -150,8 +150,13 @@ async function getSearchSuggestions(request) {
             throw new HttpsError("internal", "AI service not configured");
         }
 
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-001" });
+        const sdkLoaded = await loadGeminiSDK();
+        const { GoogleGenAI } = getGeminiSDK();
+        if (!sdkLoaded || !GoogleGenAI) {
+            throw new HttpsError("internal", "AI service not available");
+        }
+
+        const genAI = new GoogleGenAI({ apiKey });
 
         // Create context from previous results
         const context = previousResults.length > 0 
@@ -175,8 +180,13 @@ async function getSearchSuggestions(request) {
             }
         `;
 
-        const result = await model.generateContent(prompt);
-        const response = result.response.text();
+        const result = await genAI.models.generateContent(
+            buildGenerateContentRequest(prompt, {
+                model: "gemini-2.5-flash",
+                safetySettings: getSafetySettings(),
+            }),
+        );
+        const response = (typeof result.text === "function" ? result.text() : result.text) || "";
         
         // Parse JSON from response
         const jsonMatch = response.match(/\{[\s\S]*\}/);
@@ -254,8 +264,13 @@ async function getGeminiInsights(query, results) {
         const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) return null;
 
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-001" });
+        const sdkLoaded = await loadGeminiSDK();
+        const { GoogleGenAI } = getGeminiSDK();
+        if (!sdkLoaded || !GoogleGenAI) {
+            return null;
+        }
+
+        const genAI = new GoogleGenAI({ apiKey });
 
         const resultsContext = results.slice(0, 5).map(r => `- ${r.title}: ${r.excerpt}`).join('\n');
 
@@ -271,9 +286,14 @@ async function getGeminiInsights(query, results) {
             Be concise and factual.
         `;
 
-        const result = await model.generateContent(prompt);
+        const result = await genAI.models.generateContent(
+            buildGenerateContentRequest(prompt, {
+                model: "gemini-2.5-flash",
+                safetySettings: getSafetySettings(),
+            }),
+        );
         return {
-            summary: result.response.text(),
+            summary: (typeof result.text === "function" ? result.text() : result.text) || "",
             source: 'gemini'
         };
 

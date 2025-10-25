@@ -5,7 +5,7 @@ const router = express.Router();
 
 // Local dependencies
 const { logger } = require('../../config');
-const { loadGeminiSDK, getSafetySettings, getGeminiSDK } = require('../../utils');
+const { loadGeminiSDK, getSafetySettings, getGeminiSDK, buildGenerateContentRequest } = require('../../utils');
 
 // This route handles the AI Agent response generation via a standard POST request.
 router.post('/generateAIAgentResponse', async (req, res) => {
@@ -20,10 +20,10 @@ router.post('/generateAIAgentResponse', async (req, res) => {
     }
 
     const sdkLoaded = await loadGeminiSDK();
-    const { GoogleGenerativeAI } = getGeminiSDK(); // Destructure the loaded SDK
-    
-    if (!sdkLoaded || !GoogleGenerativeAI) {
-      logger.error("AI Agent HTTP: GoogleGenerativeAI SDK not loaded.");
+    const { GoogleGenAI } = getGeminiSDK(); // Destructure the loaded SDK
+
+    if (!sdkLoaded || !GoogleGenAI) {
+      logger.error("AI Agent HTTP: GoogleGenAI SDK not loaded.");
       return res.status(500).json({ error: "Core AI SDK failed to load", success: false });
     }
 
@@ -33,11 +33,7 @@ router.post('/generateAIAgentResponse', async (req, res) => {
       return res.status(400).json({ error: "A non-empty prompt is required.", success: false });
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash-001",
-      safetySettings: getSafetySettings()
-    });
+    const genAI = new GoogleGenAI({ apiKey });
 
     // --- DYNAMIC PROMPT CONSTRUCTION ---
     let fullPrompt = `You are a helpful and highly context-aware AI assistant for TrendingTechDaily.com, a tech news website.\n`;
@@ -101,9 +97,13 @@ Be proactive in offering these options if the user's query is related to "this a
     // --- END OF DYNAMIC PROMPT CONSTRUCTION ---
 
     logger.info("AI Agent HTTP: Sending final prompt to Gemini (first 500 chars):", fullPrompt.substring(0,500));
-    const result = await model.generateContent(fullPrompt);
-    const response = await result.response;
-    const responseText = response.text();
+    const result = await genAI.models.generateContent(
+      buildGenerateContentRequest(fullPrompt, {
+        model: "gemini-2.5-flash",
+        safetySettings: getSafetySettings(),
+      }),
+    );
+    const responseText = (typeof result.text === 'function' ? result.text() : result.text) || '';
     logger.info("AI Agent HTTP: Received response from Gemini.");
 
     return res.status(200).json({  
