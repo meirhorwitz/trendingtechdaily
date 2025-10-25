@@ -1,7 +1,7 @@
 // functions/utils.js
 
 const { logger } = require("./config");
-let GoogleGenerativeAI, HarmCategory, HarmBlockThreshold;
+let GoogleGenAI, HarmCategory, HarmBlockThreshold;
 
 /**
  * Safely gets a value from a function, returning a default if it throws an error.
@@ -19,16 +19,16 @@ function getSafe(fn, defaultValue = "") {
  * Lazily loads the Google Generative AI SDK to improve startup performance.
  */
 async function loadGeminiSDK() {
-  if (!GoogleGenerativeAI) {
+  if (!GoogleGenAI) {
     try {
-      const generativeAIModule = require("@google/generative-ai");
-      GoogleGenerativeAI = generativeAIModule.GoogleGenerativeAI;
+      const generativeAIModule = require("@google/genai");
+      GoogleGenAI = generativeAIModule.GoogleGenAI;
       HarmCategory = generativeAIModule.HarmCategory;
       HarmBlockThreshold = generativeAIModule.HarmBlockThreshold;
-      logger.info("Gemini SDK loaded successfully");
+      logger.info("Gemini SDK (@google/genai) loaded successfully");
       return true;
     } catch (e) {
-      logger.error("Failed to load @google/generative-ai:", e.message);
+      logger.error("Failed to load @google/genai:", e.message);
       return false;
     }
   }
@@ -68,10 +68,41 @@ function getStockMappingCacheDuration() {
   return 24 * 60 * 60 * 1000; // 24 hours
 }
 
+function buildGenerateContentRequest(prompt, options = {}) {
+  if (prompt && typeof prompt === "object" && !Array.isArray(prompt)) {
+    if (prompt.contents) {
+      return { ...prompt, ...options };
+    }
+    if (prompt.messages) {
+      const contents = prompt.messages.map((message) => ({
+        role: message.role || "user",
+        parts: message.parts || [{ text: message.content }],
+      }));
+      return { contents, ...options };
+    }
+  }
+
+  if (Array.isArray(prompt)) {
+    return { contents: prompt, ...options };
+  }
+
+  const text = prompt !== undefined && prompt !== null ? String(prompt) : "";
+  return {
+    contents: [
+      {
+        role: "user",
+        parts: [{ text }],
+      },
+    ],
+    ...options,
+  };
+}
+
 module.exports = {
   getSafe,
   loadGeminiSDK,
   getSafetySettings,
   getStockMappingCacheDuration,
-  getGeminiSDK: () => ({ GoogleGenerativeAI, HarmCategory, HarmBlockThreshold }),
+  buildGenerateContentRequest,
+  getGeminiSDK: () => ({ GoogleGenAI, HarmCategory, HarmBlockThreshold }),
 };

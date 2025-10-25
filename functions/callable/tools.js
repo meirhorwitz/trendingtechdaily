@@ -3,7 +3,7 @@
 const fetch = require("node-fetch");
 const { HttpsError } = require("firebase-functions/v2/https");
 const { logger } = require("../config");
-const { loadGeminiSDK, getSafetySettings, getGeminiSDK } = require("../utils");
+const { loadGeminiSDK, getSafetySettings, getGeminiSDK, buildGenerateContentRequest } = require("../utils");
 
 /**
  * The main AI Agent handler with tool-calling capabilities.
@@ -17,12 +17,12 @@ async function generateAIAgentResponse(request) {
     if (!apiKey) throw new HttpsError("internal", "API Key not configured.");
 
     const sdkLoaded = await loadGeminiSDK();
-    const { GoogleGenerativeAI } = getGeminiSDK();
-    if (!sdkLoaded || !GoogleGenerativeAI) {
+    const { GoogleGenAI } = getGeminiSDK();
+    if (!sdkLoaded || !GoogleGenAI) {
       throw new HttpsError("internal", "Core AI SDK failed to load");
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
+    const genAI = new GoogleGenAI({ apiKey });
 
     // Tools definition
     const tools = {
@@ -33,18 +33,23 @@ async function generateAIAgentResponse(request) {
       ],
     };
 
-    const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash-001", // Use a model that supports tool calling
-      safetySettings: getSafetySettings(),
-      tools: tools,
-    });
-
     const systemInstruction = `You are an advanced AI assistant for TrendingTech Daily with access to real-time web search and data analysis tools. When a user asks a question, first decide if you need a tool. If so, call the tool. If not, answer directly. Context: ${JSON.stringify(context, null, 2)}`;
     
+    const normalizedHistory = (conversationHistory || []).map((message) => {
+      if (message?.parts) {
+        return message;
+      }
+      const textContent = message?.content ?? message?.text ?? "";
+      return {
+        role: message?.role || "user",
+        parts: [{ text: textContent }],
+      };
+    });
+
     const history = [
       { role: "user", parts: [{ text: systemInstruction }] },
       { role: "model", parts: [{ text: "I'm ready to assist with real-time data and tools." }] },
-      ...(conversationHistory || []),
+      ...normalizedHistory,
     ];
     
     // Add the current prompt or tool results to the history
@@ -55,9 +60,15 @@ async function generateAIAgentResponse(request) {
       history.push({ role: "user", parts: [{ text: prompt }] });
     }
 
-    const result = await model.generateContent({ contents: history });
-    const response = result.response;
-    const responseParts = response.candidates[0].content.parts;
+    const result = await genAI.models.generateContent(
+      buildGenerateContentRequest({ contents: history }, {
+        model: "gemini-2.5-flash",
+        safetySettings: getSafetySettings(),
+        tools,
+      }),
+    );
+    const firstCandidate = result.candidates?.[0];
+    const responseParts = firstCandidate?.content?.parts || [];
     const functionCalls = responseParts.filter(p => p.functionCall);
 
     if (functionCalls.length > 0) {
@@ -70,7 +81,7 @@ async function generateAIAgentResponse(request) {
         })),
       };
     } else {
-      const textResponse = response.text();
+      const textResponse = (typeof result.text === "function" ? result.text() : result.text) || "";
       logger.info("AI provided a direct response.");
       return { success: true, message: textResponse };
     }
@@ -128,14 +139,23 @@ async function getFinnhubStockData({ data }) {
     if (includeAnalysis) {
       const geminiKey = process.env.GEMINI_API_KEY;
       if (!geminiKey) throw new HttpsError("internal", "Gemini API Key needed for analysis.");
-      
-      const genAI = new GoogleGenerativeAI(geminiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-001" });
-      
+
+      const sdkLoadedForAnalysis = await loadGeminiSDK();
+      const { GoogleGenAI } = getGeminiSDK();
+      if (!sdkLoadedForAnalysis || !GoogleGenAI) {
+        throw new HttpsError("internal", "Core AI SDK failed to load");
+      }
+
+      const genAI = new GoogleGenAI({ apiKey: geminiKey });
+
       const analysisPrompt = `Analyze the following stock data and provide a brief summary of market sentiment and key trends:\n\n${JSON.stringify(stockData, null, 2)}`;
-      const analysisResult = await model.generateContent(analysisPrompt);
-      const analysisText = analysisResult.response.text();
-      
+      const analysisResult = await genAI.models.generateContent(
+        buildGenerateContentRequest(analysisPrompt, {
+          model: "gemini-2.5-flash",
+        }),
+      );
+      const analysisText = (typeof analysisResult.text === "function" ? analysisResult.text() : analysisResult.text) || "";
+
       return { stockData, analysis: analysisText };
     }
     

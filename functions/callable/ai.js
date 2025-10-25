@@ -1,10 +1,13 @@
 // functions/callable/ai.js
 
 const { HttpsError } = require("firebase-functions/v2/https");
-const { logger, db, CONFIG } = require('../config'); 
-const { loadGeminiSDK, getSafetySettings, getSafe, getGeminiSDK, getStockMappingCacheDuration } = require('../utils');
+const { logger, db, CONFIG } = require('../config');
+const { loadGeminiSDK, getSafetySettings, getSafe, getGeminiSDK, getStockMappingCacheDuration, buildGenerateContentRequest } = require('../utils');
 const fetch = require('node-fetch');
 const { fetchImageFromUnsplash } = require('../services/unsplashService');
+
+const GEMINI_FLASH_MODEL = "gemini-2.5-flash";
+const GEMINI_PRO_MODEL = "gemini-2.5-pro";
 
 // --- Helper function to get fallback colors for SVG generation ---
 function getFallbackImagesForCategory(prompt = "") {
@@ -57,15 +60,14 @@ async function generateArticleContent(request) { // request contains { auth, dat
       }
       
       const sdkLoaded = await loadGeminiSDK();
-      const { GoogleGenerativeAI } = getGeminiSDK(); 
-      
-      if (!sdkLoaded || !GoogleGenerativeAI) {
-        logger.error("generateArticleContent: GoogleGenerativeAI SDK not loaded.");
-        throw new HttpsError("internal", "Core AI SDK (@google/generative-ai) failed to load.");
+      const { GoogleGenAI } = getGeminiSDK();
+
+      if (!sdkLoaded || !GoogleGenAI) {
+        logger.error("generateArticleContent: GoogleGenAI SDK not loaded.");
+        throw new HttpsError("internal", "Core AI SDK (@google/genai) failed to load.");
       }
-      
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-001", safetySettings: getSafetySettings() });
+
+      const genAI = new GoogleGenAI({ apiKey });
 
       const structuredPrompt = `
 Write a professional tech/finance news article about "${topic}" in the style of Yahoo Finance or Bloomberg.
@@ -94,9 +96,13 @@ Generate the article about: "${topic}". Output ONLY the JSON object.
 `;
 
       logger.info("generateArticleContent: Sending structured prompt to Gemini...");
-      const result = await model.generateContent(structuredPrompt);
-      const response = await result.response;
-      const rawTextResponse = response.text();
+      const result = await genAI.models.generateContent(
+        buildGenerateContentRequest(structuredPrompt, {
+          model: GEMINI_FLASH_MODEL,
+          safetySettings: getSafetySettings(),
+        }),
+      );
+      const rawTextResponse = (typeof result.text === "function" ? result.text() : result.text) || "";
       logger.info("generateArticleContent: Raw Gemini Response (first 500 chars):", rawTextResponse.substring(0, 500));
 
       let generatedJson = {};
@@ -291,18 +297,14 @@ async function generateArticleImage(request) {
 
         // Try to use Gemini to generate a base64 encoded SVG or simple image
         const sdkLoaded = await loadGeminiSDK();
-        const { GoogleGenerativeAI } = getGeminiSDK();
+        const { GoogleGenAI } = getGeminiSDK();
 
-        if (!sdkLoaded || !GoogleGenerativeAI) {
-            logger.error("GoogleGenerativeAI SDK not loaded.");
+        if (!sdkLoaded || !GoogleGenAI) {
+            logger.error("GoogleGenAI SDK not loaded.");
             throw new HttpsError("internal", "Core AI SDK failed to load.");
         }
 
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({
-            model: "gemini-1.5-pro-latest",
-            safetySettings: getSafetySettings()
-        });
+        const genAI = new GoogleGenAI({ apiKey });
 
         // Ask Gemini to create an SVG image
         const svgPrompt = `Create a simple SVG image for this article topic: "${prompt}".
@@ -317,9 +319,13 @@ Generate ONLY the SVG code with these requirements:
 Output ONLY the SVG code starting with <svg and ending with </svg>. No explanation or other text.`;
 
         try {
-            const result = await model.generateContent(svgPrompt);
-            const response = await result.response;
-            const responseText = response.text();
+            const result = await genAI.models.generateContent(
+                buildGenerateContentRequest(svgPrompt, {
+                    model: GEMINI_PRO_MODEL,
+                    safetySettings: getSafetySettings(),
+                }),
+            );
+            const responseText = (typeof result.text === "function" ? result.text() : result.text) || "";
             
             logger.info("Gemini SVG response received");
             
@@ -414,11 +420,10 @@ async function generateTopTenArticle(request) {
         if (!apiKey) throw new HttpsError("internal", "GEMINI_API_KEY not configured.");
 
         const sdkLoaded = await loadGeminiSDK();
-        const { GoogleGenerativeAI } = getGeminiSDK();
-        if (!sdkLoaded || !GoogleGenerativeAI) throw new HttpsError("internal", "Core AI SDK failed to load.");
+        const { GoogleGenAI } = getGeminiSDK();
+        if (!sdkLoaded || !GoogleGenAI) throw new HttpsError("internal", "Core AI SDK failed to load.");
 
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-001", safetySettings: getSafetySettings() });
+        const genAI = new GoogleGenAI({ apiKey });
 
         const structuredPrompt = `Create a top ${count} list article about "${topic}" for a technology news website.
 
@@ -429,9 +434,13 @@ Requirements:
 - Provide relevant tags (key: tags) and a URL-friendly slug (key: slug).
 Output ONLY JSON with keys: title, slug, intro, items, conclusion, tags. Each item should include a "url" field when recommending a website or resource.`;
 
-        const result = await model.generateContent(structuredPrompt);
-        const response = await result.response;
-        let rawText = response.text();
+        const result = await genAI.models.generateContent(
+            buildGenerateContentRequest(structuredPrompt, {
+                model: GEMINI_FLASH_MODEL,
+                safetySettings: getSafetySettings(),
+            }),
+        );
+        let rawText = (typeof result.text === "function" ? result.text() : result.text) || "";
         rawText = rawText.replace(/```json\s*/g, '').replace(/```/g, '').trim();
         const jsonMatch = rawText.match(/\{[\s\S]*\}/);
         if (!jsonMatch) throw new Error("No JSON object in AI response");
@@ -503,11 +512,10 @@ async function generateHowToArticle(request) {
         if (!apiKey) throw new HttpsError("internal", "GEMINI_API_KEY not configured.");
 
         const sdkLoaded = await loadGeminiSDK();
-        const { GoogleGenerativeAI } = getGeminiSDK();
-        if (!sdkLoaded || !GoogleGenerativeAI) throw new HttpsError("internal", "Core AI SDK failed to load.");
+        const { GoogleGenAI } = getGeminiSDK();
+        if (!sdkLoaded || !GoogleGenAI) throw new HttpsError("internal", "Core AI SDK failed to load.");
 
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-001", safetySettings: getSafetySettings() });
+        const genAI = new GoogleGenAI({ apiKey });
 
         const structuredPrompt = `Create a step-by-step how-to article about "${topic}" for a technology news website.
 
@@ -518,9 +526,13 @@ Requirements:
 - Provide relevant tags (key: tags) and a URL-friendly slug (key: slug).
 Output ONLY JSON with keys: title, slug, intro, steps, conclusion, tags.`;
 
-        const result = await model.generateContent(structuredPrompt);
-        const response = await result.response;
-        let rawText = response.text();
+        const result = await genAI.models.generateContent(
+            buildGenerateContentRequest(structuredPrompt, {
+                model: GEMINI_FLASH_MODEL,
+                safetySettings: getSafetySettings(),
+            }),
+        );
+        let rawText = (typeof result.text === "function" ? result.text() : result.text) || "";
         rawText = rawText.replace(/```json\s*/g, '').replace(/```/g, '').trim();
         const jsonMatch = rawText.match(/\{[\s\S]*\}/);
         if (!jsonMatch) throw new Error("No JSON object in AI response");
@@ -592,15 +604,20 @@ async function readArticleAloud(request) {
         if (!apiKey) throw new HttpsError("internal", "GEMINI_API_KEY not configured.");
 
         const sdkLoaded = await loadGeminiSDK();
-        const { GoogleGenerativeAI } = getGeminiSDK();
-        if (!sdkLoaded || !GoogleGenerativeAI) throw new HttpsError("internal", "Core AI SDK failed to load.");
+        const { GoogleGenAI } = getGeminiSDK();
+        if (!sdkLoaded || !GoogleGenAI) throw new HttpsError("internal", "Core AI SDK failed to load.");
 
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: 'tts-1-hd' });
-        const result = await model.generateContent(text, { responseMimeType: 'audio/mp3' });
-        const response = await result.response;
-        const arrayBuffer = await response.arrayBuffer();
-        const base64Audio = Buffer.from(arrayBuffer).toString('base64');
+        const genAI = new GoogleGenAI({ apiKey });
+        const result = await genAI.models.generateContent(
+            buildGenerateContentRequest(text, {
+                model: 'tts-1-hd',
+                responseMimeType: 'audio/mp3',
+            }),
+        );
+        const base64Audio = result.data;
+        if (!base64Audio) {
+            throw new Error('No audio content returned from Gemini');
+        }
         return { success: true, audioContent: base64Audio };
     } catch (err) {
         logger.error('readArticleAloud error:', err);
