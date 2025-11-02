@@ -182,7 +182,7 @@ async function getSearchSuggestions(request) {
 
         const result = await genAI.models.generateContent(
             buildGenerateContentRequest(prompt, {
-                model: "gemini-2.5-flash",
+                model: "gemini-1.5-flash",
                 safetySettings: getSafetySettings(),
             }),
         );
@@ -288,7 +288,7 @@ async function getGeminiInsights(query, results) {
 
         const result = await genAI.models.generateContent(
             buildGenerateContentRequest(prompt, {
-                model: "gemini-2.5-flash",
+                model: "gemini-1.5-flash",
                 safetySettings: getSafetySettings(),
             }),
         );

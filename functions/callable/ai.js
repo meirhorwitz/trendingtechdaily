@@ -6,8 +6,7 @@ const { loadGeminiSDK, getSafetySettings, getSafe, getGeminiSDK, getStockMapping
 const fetch = require('node-fetch');
 const { fetchImageFromUnsplash } = require('../services/unsplashService');
 
-const GEMINI_FLASH_MODEL = "gemini-2.5-flash";
-const GEMINI_PRO_MODEL = "gemini-2.5-pro";
+const GEMINI_PRIMARY_MODEL = "gemini-1.5-flash";
 
 // --- Helper function to get fallback colors for SVG generation ---
 function getFallbackImagesForCategory(prompt = "") {
@@ -98,7 +97,7 @@ Generate the article about: "${topic}". Output ONLY the JSON object.
       logger.info("generateArticleContent: Sending structured prompt to Gemini...");
       const result = await genAI.models.generateContent(
         buildGenerateContentRequest(structuredPrompt, {
-          model: GEMINI_FLASH_MODEL,
+          model: GEMINI_PRIMARY_MODEL,
           safetySettings: getSafetySettings(),
         }),
       );
@@ -321,7 +320,7 @@ Output ONLY the SVG code starting with <svg and ending with </svg>. No explanati
         try {
             const result = await genAI.models.generateContent(
                 buildGenerateContentRequest(svgPrompt, {
-                    model: GEMINI_PRO_MODEL,
+                    model: GEMINI_PRIMARY_MODEL,
                     safetySettings: getSafetySettings(),
                 }),
             );
@@ -436,7 +435,7 @@ Output ONLY JSON with keys: title, slug, intro, items, conclusion, tags. Each it
 
         const result = await genAI.models.generateContent(
             buildGenerateContentRequest(structuredPrompt, {
-                model: GEMINI_FLASH_MODEL,
+                model: GEMINI_PRIMARY_MODEL,
                 safetySettings: getSafetySettings(),
             }),
         );
@@ -527,8 +526,8 @@ Requirements:
 Output ONLY JSON with keys: title, slug, intro, steps, conclusion, tags.`;
 
         const result = await genAI.models.generateContent(
-            buildGenerateContentRequest(structuredPrompt, {
-                model: GEMINI_FLASH_MODEL,
+          buildGenerateContentRequest(structuredPrompt, {
+              model: GEMINI_PRIMARY_MODEL,
                 safetySettings: getSafetySettings(),
             }),
         );
