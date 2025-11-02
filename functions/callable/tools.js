@@ -62,7 +62,7 @@ async function generateAIAgentResponse(request) {
 
     const result = await genAI.models.generateContent(
       buildGenerateContentRequest({ contents: history }, {
-        model: "gemini-2.5-flash",
+        model: "gemini-1.5-flash",
         safetySettings: getSafetySettings(),
         tools,
       }),
@@ -151,7 +151,7 @@ async function getFinnhubStockData({ data }) {
       const analysisPrompt = `Analyze the following stock data and provide a brief summary of market sentiment and key trends:\n\n${JSON.stringify(stockData, null, 2)}`;
       const analysisResult = await genAI.models.generateContent(
         buildGenerateContentRequest(analysisPrompt, {
-          model: "gemini-2.5-flash",
+          model: "gemini-1.5-flash",
         }),
       );
       const analysisText = (typeof analysisResult.text === "function" ? analysisResult.text() : analysisResult.text) || "";

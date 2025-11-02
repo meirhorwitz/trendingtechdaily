@@ -99,7 +99,7 @@ Be proactive in offering these options if the user's query is related to "this a
     logger.info("AI Agent HTTP: Sending final prompt to Gemini (first 500 chars):", fullPrompt.substring(0,500));
     const result = await genAI.models.generateContent(
       buildGenerateContentRequest(fullPrompt, {
-        model: "gemini-2.5-flash",
+        model: "gemini-1.5-flash",
         safetySettings: getSafetySettings(),
       }),
     );
