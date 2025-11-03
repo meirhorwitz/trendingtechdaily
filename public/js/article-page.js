@@ -10,6 +10,17 @@ function getSafe(fn, defaultValue = '') {
     }
 }
 
+// Add noindex meta tag
+function addNoindexMeta() {
+    let meta = document.querySelector('meta[name="robots"]');
+    if (!meta) {
+        meta = document.createElement('meta');
+        meta.setAttribute('name', 'robots');
+        document.head.appendChild(meta);
+    }
+    meta.setAttribute('content', 'noindex');
+}
+
 // Get article info from URL or sessionStorage
 function getArticleInfoFromUrl() {
     // First check if we have server-injected info
@@ -78,8 +89,8 @@ async function loadArticle(articleInfo) {
 
     if (!articleInfo || !articleInfo.articleSlug) {
         console.error('No article slug found in URL');
-        showError('Article not found.');
-        document.title = "Article Not Found | TrendingTechDaily";
+        addNoindexMeta();
+        window.location.replace('/404.html');
         return;
     }
 
@@ -95,8 +106,8 @@ async function loadArticle(articleInfo) {
 
         if (snapshot.empty) {
             console.error('Article not found in database');
-            showError('Article not found or is not published.');
-            document.title = "Article Not Found | TrendingTechDaily";
+            addNoindexMeta();
+            window.location.replace('/404.html');
             return;
         }
 
@@ -146,6 +157,7 @@ async function loadArticle(articleInfo) {
 
     } catch (error) {
         console.error('Error loading article:', error);
+        addNoindexMeta();
         showError(`Failed to load the article. Please try again later.`);
         document.title = "Error | TrendingTechDaily";
     }
